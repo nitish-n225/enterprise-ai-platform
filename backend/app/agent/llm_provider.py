@@ -63,7 +63,7 @@ class LLMProvider:
 
         if self.is_mock_mode:
             # Deterministic business rule classifier for mock mode
-            if any(w in prompt_lower for w in ["ticket", "escalate", "refund approval", "dispute review"]):
+            if any(w in prompt_lower for w in ["issue a refund", "issue refund", "process refund", "request a refund", "ticket", "escalate", "sev-1", "severity 1", "severity-1", "contract override", "discount override", "refund approval"]):
                 return "HITL_ACTION", True
             elif any(w in prompt_lower for w in ["policy", "refund", "sla", "document", "service level", "terms", "agreement", "guideline", "retention"]):
                 return "KNOWLEDGE_SEARCH", True
@@ -319,13 +319,15 @@ Executed Tool Data:
         elif intent == "HITL_ACTION":
             approval_data = next((r.get("data") for r in tool_results if r.get("tool") == "hitl_approval"), None)
             action_id = approval_data.get("approval_id", "Pending") if approval_data else "REQ-1001"
-            header += f"### ⚠️ Human-in-the-Loop Action Staged (Approval Required)\n"
-            header += f"The proposed operational action has been safely placed in the **Pending Approval Queue**:\n\n"
-            header += f"- **Request Reference:** #{action_id}\n"
-            header += f"- **Action Type:** `CREATE_SUPPORT_TICKET`\n"
-            header += f"- **Target System:** Engineering Incident Triage Board\n"
-            header += f"- **Security Policy:** Direct database modifications and external ticket creation require authenticated administrator approval.\n\n"
-            header += "Please navigate to the **Human Approvals** dashboard to review and approve or reject this action."
+            act_type = approval_data.get("action_type", "OPERATIONAL_ACTION") if approval_data else "OPERATIONAL_ACTION"
+            title = approval_data.get("title", "High-Impact Action") if approval_data else "High-Impact Action"
+            header += f"### ⚠️ Human-in-the-Loop Action Staged (Approval Required)\n\n"
+            header += f"The proposed high-impact operational action has been placed in the **Pending Approval Queue**:\n\n"
+            header += f"- **Request Reference:** `#{action_id}`\n"
+            header += f"- **Action Type:** `{act_type}`\n"
+            header += f"- **Action Title:** {title}\n"
+            header += f"- **Governance Rule:** Direct customer-impacting changes (refunds > $500, Sev-1 incidents, contract overrides) require human administrator authorization.\n\n"
+            header += f"You can review, approve, or reject this request in the **[Human Approvals](/approvals)** dashboard."
 
         else:
             header += "### Enterprise AI Operations Assistant\n"

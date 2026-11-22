@@ -138,9 +138,33 @@
   - Full Business Analytics dashboard (`/analytics`) with KPI cards, MoM growth banner, top products ranking, and regional sales distribution.
 - [x] Comprehensive test suite: 51 passing tests covering PDF/DOCX/TXT text extraction, magic byte validation, duplicate detection, path traversal safety, scanned OCR warnings, vector search similarity, RAG tool citations, and end-to-end RAG workflows.
 
-### [ ] Phase 5: Downloadable Reports & Human Approval Workflow
-- Report generation (ReportLab PDF & CSV download).
-- Interactive Human-in-the-Loop approval dashboard (Approve/Reject staged actions).
+### [x] Phase 5: Downloadable Reports & Human-in-the-Loop Approval Workflow (Completed)
+- [x] Publication-Grade ReportLab PDF & RFC 4180 CSV Generation Engine (`backend/app/services/report_generator.py`):
+  - Two-pass `NumberedCanvas` computing exact total page counts ("Page X of Y"), confidential header rules, and UTC generation timestamps.
+  - Three distinct enterprise report types:
+    - `executive_summary`: Enterprise gross & net totals, orders count, AOV, MoM growth %, Top 5 Products table, and Regional Distribution table.
+    - `sales_detailed`: Detailed chronological ledger of recent completed orders with customer name, region, payment method, and amount.
+    - `regional_breakdown`: Full regional market share matrix with gross, discounts, net, and volume.
+  - CSV report generator outputting RFC 4180 compliant tabular records for spreadsheets.
+  - Physical file persistence under `data/reports/` with automatic UUID naming and `Report` metadata database records.
+- [x] Human-in-the-Loop (HITL) Supervised Governance Engine (`backend/app/services/approval_service.py`):
+  - Agentic intent detection for high-impact actions: customer refunds exceeding $500, critical Severity-1 incident escalations, and contract discount overrides (>20%).
+  - Automatic staging into `ApprovalRequest` with `PENDING` status instead of unauthorized direct execution.
+  - Agent chat response citing the exact corporate policy rule and referencing the staged Request ID.
+  - Operator review workflow with state validation (rejecting multiple reviews), reviewer attribution, and audit logging.
+- [x] Reports & Approvals REST API:
+  - `POST /api/reports/generate` - Trigger asynchronous/synchronous report compilation.
+  - `GET /api/reports` - List archived reports.
+  - `GET /api/reports/download/{id}` - Stream PDF/CSV with attachment headers.
+  - `DELETE /api/reports/{id}` - Remove report record and disk file.
+  - `GET /api/approvals` - Query staged requests with `status_filter` (PENDING, APPROVED, REJECTED).
+  - `GET /api/approvals/{id}` - Detailed payload inspection.
+  - `POST /api/approvals/{id}/review` - Operator decision (APPROVED/REJECTED) with resolution notes.
+- [x] Next.js 14 Frontend Implementation:
+  - Reports Generator (`/reports`): Report type selector, PDF/CSV format toggle, custom title input, instant download trigger, and historical archive table.
+  - Human Approvals Dashboard (`/approvals`): Filter tabs (All, Pending with badge count, Approved, Rejected), formatted action payload cards, and inline Approve/Reject action form with reviewer notes.
+  - Chat UI Integration (`/chat`): Real-time visual alert card when high-impact actions are staged with a one-click link to `/approvals`.
+- [x] Comprehensive test suite: 56 passing tests across all modules (including PDF magic bytes validation, CSV content inspection, download headers, agent staging, and approval review lifecycle).
 
 ### [ ] Phase 6: Enterprise Security, Authentication, RBAC & Audit Logging
 - User login UI with JWT authentication.

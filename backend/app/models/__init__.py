@@ -5,6 +5,7 @@ from backend.app.models.rag import Document, DocumentChunk
 from backend.app.models.approval import ApprovalRequest
 from backend.app.models.audit import AuditLog
 from backend.app.models.chat import ChatSession, ChatMessage
+from backend.app.models.report import Report
 
 __all__ = [
     "Base",
@@ -20,5 +21,6 @@ __all__ = [
     "ApprovalRequest",
     "AuditLog",
     "ChatSession",
-    "ChatMessage"
+    "ChatMessage",
+    "Report"
 ]

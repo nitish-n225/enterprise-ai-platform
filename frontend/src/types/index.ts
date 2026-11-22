@@ -126,3 +126,29 @@ export interface DocumentSearchResult {
   similarity_score: number;
   token_count: number;
 }
+
+export interface ReportItem {
+  id: number;
+  title: string;
+  report_type: "executive_summary" | "sales_detailed" | "regional_breakdown";
+  file_format: "pdf" | "csv";
+  filename: string;
+  file_size_bytes: number;
+  created_at: string;
+  summary?: string;
+  download_url?: string;
+}
+
+export interface ApprovalItem {
+  id: number;
+  action_type: string;
+  title: string;
+  description: string;
+  payload_json: string;
+  status: "PENDING" | "APPROVED" | "REJECTED";
+  requested_by: string;
+  reviewed_by?: string;
+  resolution_notes?: string;
+  resolved_at?: string;
+  created_at: string;
+}

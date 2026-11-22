@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import Link from "next/link";
 import { api } from "@/lib/api";
 import { ChatMessageItem, ChatSessionSummary, ToolActivity } from "@/types";
 import {
@@ -23,6 +24,8 @@ import {
   Layers,
   ArrowRight,
   Code2,
+  ShieldAlert,
+  ExternalLink,
 } from "lucide-react";
 
 // Markdown and Table Parser Component
@@ -130,8 +133,42 @@ function FormattedMessage({ content }: { content: string }) {
   return <div className="space-y-1">{elements}</div>;
 }
 
-// Visual Analytics Card for BI Tools
+// Visual Analytics Card for BI Tools & Approvals
 function VisualAnalyticsCard({ tools }: { tools: ToolActivity[] }) {
+  // Check for HITL Approval action
+  const hitlTool = tools.find((t) => t.tool === "hitl_approval");
+  if (hitlTool && hitlTool.data) {
+    const approval = hitlTool.data;
+    return (
+      <div className="bg-amber-50/70 border border-amber-300 rounded-xl p-3 text-xs space-y-2 mt-2">
+        <div className="flex items-center justify-between font-semibold text-amber-900">
+          <div className="flex items-center space-x-1.5">
+            <ShieldAlert className="w-4 h-4 text-amber-600" />
+            <span>Human-in-the-Loop Action Staged</span>
+          </div>
+          <span className="text-[10px] bg-amber-100 text-amber-800 border border-amber-300 px-2 py-0.5 rounded-full font-mono font-bold">
+            #{approval.approval_id} PENDING
+          </span>
+        </div>
+        <p className="text-[11px] text-amber-800">
+          {approval.title || "This high-impact action has been staged for operator review."}
+        </p>
+        <div className="pt-1 flex items-center justify-between border-t border-amber-200/60">
+          <span className="text-[10px] text-amber-700 font-mono">
+            Action: {approval.action_type}
+          </span>
+          <Link
+            href="/approvals"
+            className="inline-flex items-center space-x-1 text-[11px] font-semibold text-indigo-700 hover:text-indigo-900"
+          >
+            <span>Review in Approvals Dashboard</span>
+            <ExternalLink className="w-3 h-3" />
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   const pandasTool = tools.find((t) => t.tool === "pandas_analytics");
   if (!pandasTool || !pandasTool.data) return null;
 

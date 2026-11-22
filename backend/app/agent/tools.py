@@ -160,32 +160,19 @@ class EnterpriseTools:
         Stages an operational action requiring Human-in-the-Loop approval.
         """
         try:
-            req = ApprovalRequest(
-                action_type="CREATE_SUPPORT_TICKET",
-                title="AI Agent Staged Incident Escalation",
-                description=f"Automated action requested via agent dialogue: '{inquiry[:150]}...'",
-                payload_json=json.dumps({
-                    "action": "CREATE_SUPPORT_TICKET",
-                    "source": "AI_Agent_Chat",
-                    "inquiry": inquiry,
-                    "target_board": "Engineering Triage"
-                }),
-                status="PENDING",
-                requested_by="AI_Agent"
-            )
-            db.add(req)
-            db.commit()
-            db.refresh(req)
+            from backend.app.services.approval_service import approval_service
+            req = approval_service.stage_action(db=db, inquiry=inquiry, requested_by="AI_Agent")
 
             return {
                 "success": True,
                 "tool": "hitl_approval",
-                "summary": f"Staged action #{req.id} into Pending Approval Queue.",
+                "summary": f"Staged action #{req.id} into Pending Approval Queue (Action: {req.action_type}).",
                 "data": {
                     "approval_id": req.id,
                     "action_type": req.action_type,
                     "status": req.status,
-                    "title": req.title
+                    "title": req.title,
+                    "description": req.description
                 },
                 "error": None
             }
@@ -194,7 +181,7 @@ class EnterpriseTools:
             return {
                 "success": False,
                 "tool": "hitl_approval",
-                "summary": "Failed to stage approval request.",
+                "summary": f"Failed to stage approval request: {str(e)}",
                 "data": None,
                 "error": str(e)
             }

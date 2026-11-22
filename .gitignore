@@ -40,6 +40,8 @@ htmlcov/
 *.sqlite3
 data/uploads/*
 !data/uploads/.gitkeep
+data/reports/*
+!data/reports/.gitkeep
 data/vector_index/*
 !data/vector_index/.gitkeep
 
