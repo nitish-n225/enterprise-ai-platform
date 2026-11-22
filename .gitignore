@@ -35,6 +35,8 @@ htmlcov/
 
 # Local databases & uploads
 *.db
+*.db-shm
+*.db-wal
 *.sqlite3
 data/uploads/*
 !data/uploads/.gitkeep
@@ -54,3 +56,4 @@ yarn-error.log*
 # OS specific
 .DS_Store
 Thumbs.db
+
