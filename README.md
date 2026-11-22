@@ -79,12 +79,19 @@ A production-grade, portfolio-ready Agentic AI business operations platform buil
 - **CSV Data Exports:** RFC 4180-compliant comma-separated values generator for raw transactional orders, regional performance, and product catalogues.
 - **Human-in-the-Loop (HITL) Governance:** Intercepts high-impact actions (refunds > $500, Sev-1 incident tickets, contract discount overrides > 20%), stages an `ApprovalRequest` into a `PENDING` queue, and logs operator decisions (`APPROVED` / `REJECTED`) into the immutable audit ledger.
 
-### 6. Enterprise SaaS UI (Next.js 14)
+### 6. Authentication, RBAC & Security Audit Ledger
+- **JWT & Bcrypt Security:** Salted password hashing with `bcrypt` and HMAC-SHA256 JWT access tokens via `PyJWT`.
+- **Role-Based Access Control (RBAC):** Tiered permissions across `admin` (unrestricted), `analyst` (queries, analytics, reports), and `viewer` (read-only executive access).
+- **Compliance Audit Logging:** Immutable security ledger capturing user logins, failed attempts, document operations, report generations, and HITL authorization decisions with client IP and JSON payloads.
+
+### 7. Enterprise SaaS UI (Next.js 14)
 - **AI Operations Chat:** Real-time Markdown table parser, interactive visual analytics cards (Regional bars, MoM growth badge, Top products ranking, HITL Action alert card), SQL query viewer, and persistent session drawer.
 - **Knowledge Base (`/knowledge`):** Document upload zone with 15MB drag-and-drop validation, document repository with status pills and SHA-256 hashes, chunk inspector modal, and interactive vector search playground.
 - **Business Analytics (`/analytics`):** Real-time financial KPI cards, MoM growth trend banner, top products ranking, regional market share distribution, and customer tier cohorts.
 - **Reports Generator (`/reports`):** Interactive report generator supporting Executive Summary, Detailed Sales, and Regional Performance in both styled PDF and raw CSV, with instant browser downloads and historical archive.
 - **Human Approvals (`/approvals`):** Status-filtered review inbox (Pending, Approved, Rejected) with payload inspection, review notes input, and one-click Approve/Reject authorizations.
+- **Audit Ledger (`/audit`):** Statistical activity ribbon, action type filters, user search, and structured JSON detail inspector drawer.
+- **Settings & Governance (`/settings`):** Infrastructure parameters inspector and interactive RBAC Role Simulator (instant toggle between Admin, Analyst, and Viewer with active privileges matrix).
 
 ---
 
@@ -125,12 +132,13 @@ npm run dev
 
 ## Running Automated Tests
 
-Run the complete backend test suite (56 tests):
+Run the complete backend test suite (62 tests):
 ```powershell
 python -m pytest backend/tests -v
 ```
 
 **Test Suite Coverage:**
+- `test_auth_and_rbac.py`: Bcrypt login, invalid credentials rejection, JWT profile retrieval, admin user listing, analyst 403 Forbidden enforcement, and audit ledger querying.
 - `test_reports_and_approvals.py`: PDF `%PDF-` generation, CSV RFC 4180 export, report download endpoint with headers, chat agent approval staging, and review authorization lifecycle.
 - `test_document_processing.py`: PDF/DOCX/TXT text extraction, magic byte header verification, path traversal sanitization, SHA-256 duplicate detection, OCR warning on image-only PDFs.
 - `test_vector_rag.py`: 768-dim embeddings, vector similarity search, grounded citation extraction, and non-matching query refusal.

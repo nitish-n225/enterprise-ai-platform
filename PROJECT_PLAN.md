@@ -166,10 +166,23 @@
   - Chat UI Integration (`/chat`): Real-time visual alert card when high-impact actions are staged with a one-click link to `/approvals`.
 - [x] Comprehensive test suite: 56 passing tests across all modules (including PDF magic bytes validation, CSV content inspection, download headers, agent staging, and approval review lifecycle).
 
-### [ ] Phase 6: Enterprise Security, Authentication, RBAC & Audit Logging
-- User login UI with JWT authentication.
-- RBAC permissions on endpoints (Admin, Analyst, Viewer).
-- Security audit log inspection dashboard.
+### [x] Phase 6: Enterprise Security, Authentication, RBAC & Audit Logging (Completed)
+- [x] Cryptographic Authentication & RBAC Engine (`backend/app/core/security.py`):
+  - Salted password hashing with `bcrypt`.
+  - Cryptographically signed HMAC-SHA256 JWT access tokens via `PyJWT`.
+  - Role-Based Access Control (RBAC) dependency factories (`require_roles`):
+    - `admin`: Unrestricted operational control, document management, approvals review, audit trail inspection, user management.
+    - `analyst`: SQL queries, Pandas BI, RAG search, report generation, and audit trail inspection.
+    - `viewer`: Read-only queries, executive dashboards, and reports downloads.
+  - Endpoints: `POST /api/auth/login`, `GET /api/auth/me`, `GET /api/auth/users`.
+- [x] Comprehensive Security & Operational Audit Trail (`backend/app/api/audit.py`, `backend/app/models/audit.py`):
+  - Immutable event recording for logins, document uploads, reports generation, and approval decisions.
+  - Client IP tracking, HTTP status code capture, and structured JSON detail snapshots.
+  - Endpoints: `GET /api/audit` (paginated, action and user filters), `GET /api/audit/stats` (event metrics and recent activity).
+- [x] Next.js 14 Frontend Implementation:
+  - Security & Audit Dashboard (`/audit`): Statistical ribbon, filter by action type, search by user ID, and structured JSON payload inspector drawer.
+  - Platform Settings & Governance (`/settings`): Infrastructure inspector (database, LLM model, embedding dimensions, vector similarity threshold) and interactive RBAC Role Simulator (one-click toggle between Admin, Analyst, and Viewer with active privileges matrix).
+- [x] Comprehensive test suite: 62 passing tests across all modules (including login credential verification, invalid password rejection, current user token decoding, admin user listing, analyst 403 Forbidden enforcement, and audit trail query/stats).
 
 ### [ ] Phase 7: Verification, Testing, Docker & Deployment Readiness
 - Multi-container `docker-compose.yml`.

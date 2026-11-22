@@ -152,3 +152,28 @@ export interface ApprovalItem {
   resolved_at?: string;
   created_at: string;
 }
+
+export interface AuditLogItem {
+  id: number;
+  user_id?: string;
+  user_role?: string;
+  ip_address?: string;
+  endpoint: string;
+  action: string;
+  resource_type?: string;
+  resource_id?: string;
+  status_code: number;
+  details_json?: string;
+  timestamp: string;
+}
+
+export interface AuditStats {
+  total_events: number;
+  actions_breakdown: Record<string, number>;
+  recent_activity: {
+    action: string;
+    user_id?: string;
+    status_code: number;
+    timestamp: string;
+  }[];
+}
