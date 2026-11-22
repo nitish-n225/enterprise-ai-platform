@@ -290,21 +290,31 @@ Executed Tool Data:
             header += "\n\n*Analysis computed via deterministic Pandas Business Intelligence Engine.*"
 
         elif intent == "KNOWLEDGE_SEARCH":
-            kb_data = next((r.get("data") for r in tool_results if r.get("tool") == "knowledge_search"), None)
-            if kb_data and isinstance(kb_data, list) and len(kb_data) > 0:
-                top_match = kb_data[0]
-                header += f"### Policy & Documentation Findings\n"
-                header += f"**Source Document:** `{top_match.get('document_filename', 'Enterprise_Policy.txt')}`\n\n"
-                header += f"> \"{top_match.get('content', '')}\"\n\n"
-                header += "**Key Policy Summary:**\n"
-                header += "- Subscriptions are eligible for 100% refund within 30 calendar days of provisioning.\n"
-                header += "- Hardware appliances may be returned within 45 days (10% restocking fee applies).\n"
-                header += "- Refunds exceeding $5,000 require explicit authorization from an Operations Manager."
+            kb_tool_res = next((r for r in tool_results if r.get("tool") == "knowledge_search"), {})
+            kb_data = kb_tool_res.get("data", [])
+            insufficient = kb_tool_res.get("insufficient_evidence", False) or not kb_data
+
+            if insufficient:
+                header += "### Enterprise Knowledge Base Search\n\n"
+                header += "The uploaded company documents and enterprise knowledge base do not contain sufficient information to answer this inquiry.\n\n"
+                header += "*Grounded RAG Guardrail: The Operations Agent strictly bases policy answers on verified internal documents and does not infer or invent missing company facts.*"
             else:
-                header += "### Enterprise Knowledge Base Search\n"
-                header += "According to **`Enterprise_Refund_Policy_2026.txt`** and **`Service_Level_Agreement_SLA_2026.txt`**:\n\n"
-                header += "- **Refund Policy:** Cloud subscriptions can be refunded within 30 days of provisioning. Requests over $5,000 USD require human supervisor approval.\n"
-                header += "- **SLA Guarantees:** 99.99% availability for 24/7 dedicated support tiers with a 15-minute response SLA on Severity-1 incidents."
+                top_match = kb_data[0]
+                doc_name = top_match.get("document_filename", "Enterprise_Policy.txt")
+                page_num = top_match.get("page_number", 1)
+                content_excerpt = top_match.get("content", "").strip()
+
+                header += f"### Policy & Documentation Findings\n\n"
+                header += f"> \"{content_excerpt}\"\n\n"
+                header += f"**Citation:** [Source: {doc_name}, page {page_num}]\n\n"
+                header += "**Key Policy Summary:**\n"
+                # Extract bullet points from content
+                for line in content_excerpt.split("\n"):
+                    line = line.strip()
+                    if line and (line.startswith("-") or line[0].isdigit()):
+                        header += f"{line}\n"
+                if not any(l.strip().startswith("-") or (l.strip() and l.strip()[0].isdigit()) for l in content_excerpt.split("\n")):
+                    header += f"- Verified according to internal policy `{doc_name}` (page {page_num}).\n"
 
         elif intent == "HITL_ACTION":
             approval_data = next((r.get("data") for r in tool_results if r.get("tool") == "hitl_approval"), None)

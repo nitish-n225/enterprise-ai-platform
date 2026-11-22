@@ -3,6 +3,7 @@ import logging
 from typing import Dict, Any, List, Optional
 from sqlalchemy.orm import Session
 from sqlalchemy import text
+from backend.app.core.config import settings
 from backend.app.agent.safe_sql import SafeSQLEngine
 from backend.app.services.analytics import PandasAnalyticsEngine
 from backend.app.models.rag import Document, DocumentChunk
@@ -113,41 +114,43 @@ class EnterpriseTools:
     @staticmethod
     def search_knowledge_base(query: str, db: Session) -> Dict[str, Any]:
         """
-        Retrieves relevant document excerpts from the internal knowledge base.
+        Retrieves relevant document excerpts from the internal knowledge base using
+        vector semantic similarity search. Returns chunks with page numbers,
+        similarity scores, and citations. If relevance is low, flags insufficient evidence.
         """
-        terms = [t for t in query.lower().split() if len(t) > 3]
-        chunks = db.query(DocumentChunk).join(Document).all()
-        scored_chunks = []
+        from backend.app.services.embeddings import embedding_service
+        from backend.app.services.vector_store import VectorStoreService
 
-        for ch in chunks:
-            content_lower = ch.content.lower()
-            score = sum(1 for term in terms if term in content_lower)
-            if score > 0 or not terms:
-                scored_chunks.append({
-                    "document_id": ch.document_id,
-                    "document_filename": ch.document.filename,
-                    "chunk_index": ch.chunk_index,
-                    "content": ch.content,
-                    "score": score
-                })
+        # 1. Generate query embedding
+        query_vec = embedding_service.embed_text(query)
 
-        scored_chunks.sort(key=lambda x: x["score"], reverse=True)
-        top_chunks = scored_chunks[:3]
+        # 2. Vector search against indexed chunks
+        top_chunks = VectorStoreService.search(
+            query_embedding=query_vec,
+            db=db,
+            top_k=settings.CHUNKS_PER_QUERY,
+            min_score=settings.SIMILARITY_THRESHOLD
+        )
 
-        if not top_chunks and chunks:
-            top_chunks = [{
-                "document_id": chunks[0].document_id,
-                "document_filename": chunks[0].document.filename,
-                "chunk_index": chunks[0].chunk_index,
-                "content": chunks[0].content,
-                "score": 0.5
-            }]
+        if not top_chunks:
+            return {
+                "success": True,
+                "tool": "knowledge_search",
+                "insufficient_evidence": True,
+                "summary": "No sufficiently relevant document excerpts found in knowledge base matching this inquiry.",
+                "data": [],
+                "query": query,
+                "error": None
+            }
 
+        summary = f"Retrieved {len(top_chunks)} document passages from verified enterprise records (top score: {top_chunks[0]['similarity_score']})."
         return {
             "success": True,
             "tool": "knowledge_search",
-            "summary": f"Retrieved {len(top_chunks)} document passages from verified enterprise records.",
+            "insufficient_evidence": False,
+            "summary": summary,
             "data": top_chunks,
+            "query": query,
             "error": None
         }
 

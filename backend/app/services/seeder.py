@@ -230,6 +230,9 @@ If monthly availability falls below 99.9%, customers are entitled to a 10% servi
 """
 
     def split_and_create_doc(filename: str, desc: str, full_text: str):
+        from backend.app.services.embeddings import embedding_service
+        import json
+
         content_hash = hashlib.sha256(full_text.encode("utf-8")).hexdigest()
         doc = Document(
             filename=filename,
@@ -238,20 +241,24 @@ If monthly availability falls below 99.9%, customers are entitled to a 10% servi
             content_hash=content_hash,
             chunk_count=0,
             uploaded_by="system",
-            description=desc
+            description=desc,
+            status="indexed",
+            embedding_model=embedding_service.active_model
         )
         db.add(doc)
         db.flush()
 
         paragraphs = [p.strip() for p in full_text.strip().split("\n\n") if p.strip()]
+        embeddings = embedding_service.embed_batch(paragraphs)
         chunks = []
-        for idx, para in enumerate(paragraphs):
+        for idx, (para, emb) in enumerate(zip(paragraphs, embeddings)):
             chunk = DocumentChunk(
                 document_id=doc.id,
                 chunk_index=idx,
+                page_number=1,
                 content=para,
                 token_count=len(para.split()),
-                embedding_json=None
+                embedding_json=json.dumps(emb)
             )
             chunks.append(chunk)
         doc.chunk_count = len(chunks)

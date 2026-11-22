@@ -67,11 +67,17 @@ A production-grade, portfolio-ready Agentic AI business operations platform buil
 - State machine pipeline: Request Classification -> Task Planning -> Tool Dispatch -> Result Validation -> Response Synthesis.
 - Hard safety ceiling of **5 iterations maximum** with automatic loop detection.
 
-### 4. Enterprise SaaS Chat Interface
-- Real-time Markdown table parser with zebra striping and sticky headers.
-- Visual analytics cards (Regional sales distribution progress bars, MoM growth badge, Top products ranking).
-- Expandable SQL inspection box showing the exact sanitized query executed.
-- Persistent session drawer with creation and deletion.
+### 4. Vector RAG & Document Knowledge Base
+- **Multi-Format Ingestion:** Ingests PDF (`pypdf`), DOCX (`python-docx`), and TXT files up to 15MB.
+- **Security Guardrails:** Validates file magic headers (`%PDF-`, `PK\x03\x04`), sanitizes path traversal, checks SHA-256 for duplicate rejection (HTTP 409), and flags scanned PDFs requiring OCR.
+- **768-Dim Embeddings:** Official Google GenAI SDK embedding model `text-embedding-004` with a deterministic SimHash signed random projection mock fallback for zero-network testing.
+- **Vector Storage:** Dual architecture supporting PostgreSQL with native `pgvector` for production and NumPy-accelerated cosine similarity for local SQLite.
+- **Grounded Citations:** RAG retrieval tool (`knowledge_search`) returns page numbers, chunk excerpts, and enforces clean refusal on irrelevant questions without hallucination.
+
+### 5. Enterprise SaaS UI (Next.js 14)
+- **AI Operations Chat:** Real-time Markdown table parser, interactive visual analytics cards (Regional bars, MoM growth badge, Top products ranking), SQL query viewer, and persistent session drawer.
+- **Knowledge Base (`/knowledge`):** Document upload zone with 15MB drag-and-drop validation, document repository with status pills and SHA-256 hashes, chunk inspector modal, and interactive vector search playground.
+- **Business Analytics (`/analytics`):** Real-time financial KPI cards, MoM growth trend banner, top products ranking, regional market share distribution, and customer tier cohorts.
 
 ---
 
@@ -112,12 +118,15 @@ npm run dev
 
 ## Running Automated Tests
 
-Run the complete backend test suite (39 tests):
+Run the complete backend test suite (51 tests):
 ```powershell
 python -m pytest backend/tests -v
 ```
 
 **Test Suite Coverage:**
+- `test_document_processing.py`: PDF/DOCX/TXT text extraction, magic byte header verification, path traversal sanitization, SHA-256 duplicate detection, OCR warning on image-only PDFs.
+- `test_vector_rag.py`: 768-dim embeddings, vector similarity search, grounded citation extraction, and non-matching query refusal.
+- `test_phase4_e2e.py`: End-to-end multi-step RAG flow via TestClient, including document listing, semantic vector search, agent RAG chat with citations, refusal of irrelevant queries, and business analytics integration.
 - `test_safe_sql.py`: Rejection of `INSERT`, `UPDATE`, `DELETE`, `DROP`, `ALTER`, multiple queries, sensitive tables (`users`, `sqlite_master`), limit clamping, and query execution.
 - `test_analytics.py`: Calculation of total revenue, MoM growth %, top products, regional shares, customer cohorts, and edge cases.
 - `test_agent_workflow.py`: LangGraph state machine, SQL flow, RAG flow, and 5-iteration limit.

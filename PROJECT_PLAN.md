@@ -106,10 +106,37 @@
   - Sanitized SQL query viewer showing the exact AST-verified query executed.
 - [x] Comprehensive test suite: 39 tests passing across Phase 1, Phase 2, and Phase 3.
 
-### [ ] Phase 4: Document Upload, Vector Embeddings & RAG Knowledge Base (Upcoming)
-- File upload UI (PDF, TXT, Markdown).
-- Ingestion pipeline with chunking and vector embeddings.
-- Semantic search viewer and document chunk citations.
+### [x] Phase 4: Document Upload, Vector Embeddings & RAG Knowledge Base (Completed)
+- [x] Secure Multi-Format Document Ingestion System (`backend/app/services/document_processor.py`):
+  - Supported formats: PDF (`pypdf`), DOCX (`python-docx`), and TXT.
+  - Magic byte header inspection (`%PDF-`, `PK\x03\x04`) preventing disguised executable uploads.
+  - Path traversal defense (`os.path.basename` and sanitized internal storage paths).
+  - Configurable 15 MB file size limit enforcement.
+  - SHA-256 content hashing for exact duplicate upload detection (returns HTTP 409 Conflict).
+  - Scanned PDF OCR warning detection for image-only pages.
+  - Normalized whitespace, encoding sanitization, and sliding-window chunking with configurable overlap.
+  - Page-level source attribution (`page_number`, `chunk_index`).
+- [x] Dual-Backend Embedding & Vector Search Architecture (`backend/app/services/embeddings.py`, `backend/app/services/vector_store.py`):
+  - Official `google-genai` integration using Google embedding model `text-embedding-004` (768 dimensions).
+  - Deterministic 768-dim mock embedding provider powered by SimHash signed random projections and stop-word filtering for zero-network testing.
+  - Vector similarity search engine with support for PostgreSQL + pgvector and SQLite NumPy-accelerated cosine similarity.
+  - Configurable similarity thresholding (`SIMILARITY_THRESHOLD = 0.20`) and top-K chunk retrieval.
+  - Grounded RAG agent tool (`EnterpriseTools.search_knowledge_base`) enforcing clean refusals and insufficient evidence detection on non-matching queries.
+- [x] Knowledge Base & Document Management API:
+  - `POST /api/documents/upload` - Secure multipart upload and synchronous vector indexing.
+  - `GET /api/documents` - List all registered enterprise documents with chunk counts, file sizes, and status.
+  - `GET /api/documents/{id}` - Inspect individual document metadata and chunk excerpts.
+  - `GET /api/documents/{id}/status` - Document indexing status polling.
+  - `POST /api/documents/search` - Semantic vector search endpoint with similarity scores.
+  - `DELETE /api/documents/{id}` - Permanent document and vector chunk deletion.
+  - `GET /api/analytics/*` - Dedicated Business Intelligence endpoints (`summary`, `growth`, `top-products`, `regional`, `customers`).
+- [x] Modern Next.js Frontend Knowledge Base & Business Analytics:
+  - Document Upload zone with drag-and-drop, 15MB client-side validation, and guardrail notifications.
+  - Document Repository table with status pills (`indexed`, `processing`, `failed`), file sizes, chunk counts, and SHA-256 hashes.
+  - Document Chunk Inspector modal for inspecting page numbers, token counts, and full chunk texts.
+  - Interactive Semantic Search Inspector (Playground) for testing natural language queries against vector embeddings with similarity score progress bars.
+  - Full Business Analytics dashboard (`/analytics`) with KPI cards, MoM growth banner, top products ranking, and regional sales distribution.
+- [x] Comprehensive test suite: 51 passing tests covering PDF/DOCX/TXT text extraction, magic byte validation, duplicate detection, path traversal safety, scanned OCR warnings, vector search similarity, RAG tool citations, and end-to-end RAG workflows.
 
 ### [ ] Phase 5: Downloadable Reports & Human Approval Workflow
 - Report generation (ReportLab PDF & CSV download).

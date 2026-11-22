@@ -31,8 +31,12 @@ class Settings(BaseSettings):
     # Documents & RAG
     UPLOAD_DIR: str = "./data/uploads"
     MAX_UPLOAD_SIZE_MB: int = 15
-    SIMILARITY_THRESHOLD: float = 0.65
+    SIMILARITY_THRESHOLD: float = 0.20
     CHUNKS_PER_QUERY: int = 5
+    CHUNK_SIZE: int = 500
+    CHUNK_OVERLAP: int = 50
+    EMBEDDING_MODEL: str = "text-embedding-004"
+    EMBEDDING_DIMENSIONS: int = 768
 
     # CORS
     ALLOWED_ORIGINS: List[str] = [

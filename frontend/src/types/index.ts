@@ -89,3 +89,40 @@ export interface ChatSessionSummary {
   created_at: string;
   updated_at: string;
 }
+
+export interface DocumentItem {
+  id: number;
+  filename: string;
+  file_type: string;
+  file_size_bytes: number;
+  content_hash: string;
+  chunk_count: number;
+  uploaded_by: string;
+  description?: string;
+  status: "pending" | "processing" | "indexed" | "failed";
+  error_message?: string;
+  embedding_model: string;
+  created_at: string;
+}
+
+export interface DocumentChunkItem {
+  id: number;
+  chunk_index: number;
+  page_number: number;
+  content: string;
+  token_count: number;
+}
+
+export interface DocumentDetail extends DocumentItem {
+  chunks: DocumentChunkItem[];
+}
+
+export interface DocumentSearchResult {
+  document_id: number;
+  document_filename: string;
+  chunk_index: number;
+  page_number: number;
+  content: string;
+  similarity_score: number;
+  token_count: number;
+}

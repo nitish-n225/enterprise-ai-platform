@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from backend.app.core.config import settings
 from backend.app.core.database import engine, Base, SessionLocal
+import backend.app.models # Ensure all models are registered on Base.metadata
 from backend.app.api.api_router import api_router
 from backend.app.services.seeder import seed_database_if_empty
 
