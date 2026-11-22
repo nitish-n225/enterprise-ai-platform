@@ -4,6 +4,7 @@ from backend.app.models.business import Customer, Product, Order, OrderItem, Sal
 from backend.app.models.rag import Document, DocumentChunk
 from backend.app.models.approval import ApprovalRequest
 from backend.app.models.audit import AuditLog
+from backend.app.models.chat import ChatSession, ChatMessage
 
 __all__ = [
     "Base",
@@ -17,6 +18,7 @@ __all__ = [
     "Document",
     "DocumentChunk",
     "ApprovalRequest",
-    "AuditLog"
+    "AuditLog",
+    "ChatSession",
+    "ChatMessage"
 ]
-

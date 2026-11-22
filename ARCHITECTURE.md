@@ -118,3 +118,4 @@ The agent operates as a cyclical graph with deterministic termination criteria:
 - **`document_chunks`**: `id`, `document_id`, `chunk_index`, `content`, `token_count`, `embedding_vector`
 - **`approval_requests`**: `id`, `action_type`, `description`, `payload_json`, `status` (`PENDING`, `APPROVED`, `REJECTED`), `requested_by`, `reviewed_by`, `created_at`, `resolved_at`
 - **`audit_logs`**: `id`, `user_id`, `ip_address`, `endpoint`, `action`, `resource_type`, `resource_id`, `status_code`, `timestamp`, `details_json`
+

@@ -18,7 +18,7 @@
 - **Python:** 3.14.7 (FastAPI, SQLAlchemy, Pandas, LangGraph, Google-GenAI, Pytest installed)
 - **Node.js:** v24.14.0 | **npm:** 11.9.0
 - **Git:** 2.52.0 (Initialized in workspace)
-- **Docker:** Not detected on host PATH; application designed with dual-engine persistence (PostgreSQL + pgvector for containerized production, SQLite WAL for zero-config local development and testing) and full Docker Compose configuration.
+- **Docker:** Supported via dual-engine persistence (PostgreSQL + pgvector for containerized production, SQLite WAL for zero-config local development and testing) and full Docker Compose configuration.
 
 ---
 
@@ -75,70 +75,46 @@
 
 ---
 
-## 4. Phase-by-Phase Implementation Roadmap
+## 4. Phase-by-Phase Implementation Status
 
-### Phase 1: Project Setup, FastAPI Backend, Database & Health Checks (Current)
-- Initialize Git repository and directory structure (`/backend`, `/frontend`).
-- Backend core: `config.py`, database setup with SQLAlchemy (supporting SQLite WAL for local run and PostgreSQL for production), base models, migration/init scripts.
-- Health check endpoints (`/api/health`, `/api/health/db`).
-- Backend synthetic data seeder for baseline tables.
-- Frontend setup: Next.js app with Tailwind CSS, TypeScript, layout navigation, and API service client.
-- Automated tests for Phase 1 backend health and database initialization.
+### [x] Phase 1: Project Setup, FastAPI Backend, Database & Health Checks (Completed)
+- [x] Initialized Git repository and directory layout (`/backend`, `/frontend`).
+- [x] Backend core: `config.py` (Pydantic Settings), `database.py` with SQLite WAL + foreign keys.
+- [x] Base models: Users, Customers, Products, Orders, Order Items, Sales Records, Documents, Chunks, Approvals, Audit Logs.
+- [x] Enterprise synthetic seeder: 3 users, 15 products, 15 customers, 120 orders, 48 monthly sales aggregates, 2 indexed policies.
+- [x] Health check endpoints (`/api/health`, `/api/health/db`).
+- [x] Next.js 14 frontend setup with TypeScript, Tailwind CSS, layout, header, sidebar, and health status card.
+- [x] Backend tests for health check and database models (9 passed).
 
-### Phase 2: Gemini Integration, Chat Interface & LangGraph Orchestrator
-- Gemini API client setup with environment-based configuration and safe mock fallback mode when key is absent.
-- LangGraph stateful graph:
-  - State definition (`messages`, `intent`, `plan`, `tool_calls`, `tool_results`, `iteration_count`, `approved_actions`).
-  - Request classifier node.
-  - Plan and tool dispatch node.
-  - Tool execution node.
-  - Response synthesis node.
-  - Guardrails: Max 5 iterations, execution timeout, loop detection.
-- Frontend Chat interface with live tool status badges, execution timings, and structured markdown outputs.
+### [x] Phase 2: Gemini Integration, Chat Interface & LangGraph Agent (Completed)
+- [x] Official `google-genai` SDK integration with environment configuration (`GEMINI_API_KEY`, `GEMINI_MODEL`, `MOCK_AI`).
+- [x] Explicit Safe Mock Mode: transparently flags simulated execution (`is_mock=True`, `mock-operations-agent`) when API key is missing.
+- [x] Cyclical LangGraph orchestrator: Request Classification -> Task Planning -> Tool Dispatch -> Result Validation -> Response Synthesis.
+- [x] Guardrails: Max 5 iterations limit, loop prevention, error recovery.
+- [x] Persistent chat models: `ChatSession` and `ChatMessage` with session cascading and step logs.
+- [x] API endpoints: `POST /api/chat`, `GET /api/chat/history`, `GET /api/chat/sessions`, `DELETE /api/chat/sessions/{id}`.
+- [x] Modern responsive Chat UI with active LangGraph execution timeline, tool breakdown drawer, suggestion pills, and session switching.
+- [x] Comprehensive test suite: 21 passing tests covering Gemini configuration, mock mode, intent classification, agent workflow, iteration limits, chat endpoints, and session persistence.
 
-### Phase 3: Business Database, Safe SQL Engine & Pandas Analytics
-- Schema & synthetic data generation:
-  - `customers` (500+ records)
-  - `products` (5 categories, 50+ items)
-  - `orders` (1,000+ orders across 12 months)
-  - `order_items` (line items with quantities, discounts, unit prices)
-  - `sales_records` (daily materialized summaries)
-- Safe SQL execution tool:
-  - Enforce single statement SELECT only via SQLGlot AST validation.
-  - Block DDL/DML (INSERT, UPDATE, DELETE, DROP, ALTER, EXEC, etc.).
-  - Maximum row limit (default 100).
-  - Enforce execution timeouts.
-- Pandas Analytics Tool:
-  - Revenue summaries, MoM growth rates, customer retention, top-5 products, anomaly detection in sales spikes.
-- Frontend Business Analytics Dashboard with charts, KPI cards, and dynamic SQL query viewer.
+### [ ] Phase 3: Business Database, Safe SQL Engine & Pandas Analytics (Upcoming)
+- Advanced text-to-SQL generation with SQLGlot AST verification.
+- Interactive SQL viewer and query explanation in frontend.
+- Dedicated Business Analytics Dashboard with charts and KPI filters.
 
-### Phase 4: Document Upload, Vector Embeddings & RAG Knowledge Base
-- Document parsing for PDF (`pypdf`) and TXT/Markdown.
-- Text chunking with overlap (500 tokens, 50 token overlap).
-- Embeddings pipeline: Gemini text-embedding / local sentence-transformer fallback.
-- Vector search with similarity threshold and top-k retrieval.
-- Strict prompt grounding: Agent cites document name and excerpt, refusing to hallucinate missing facts.
-- Frontend Knowledge Base UI with document upload, chunk preview, and semantic search inspector.
+### [ ] Phase 4: Document Upload, Vector Embeddings & RAG Knowledge Base
+- File upload UI (PDF, TXT, Markdown).
+- Ingestion pipeline with chunking and vector embeddings.
+- Semantic search viewer and document chunk citations.
 
-### Phase 5: Downloadable Reports & Human-in-the-Loop Approval Workflow
-- Business Report Generator:
-  - PDF generation (`reportlab`) and CSV export.
-  - Automated report formatting: Executive summary, data period, key metrics table, sources & limitations.
-- Human Approval System:
-  - Actions requiring approval (ticket creation, customer refunds, data modifications).
-  - Two-phase execution: Agent stages action as `PENDING_APPROVAL` with structured payload -> Admin approves/rejects via UI -> Agent executes confirmed action.
-- Frontend Reports page and Approval Requests management dashboard.
+### [ ] Phase 5: Downloadable Reports & Human Approval Workflow
+- Report generation (ReportLab PDF & CSV download).
+- Interactive Human-in-the-Loop approval dashboard (Approve/Reject staged actions).
 
-### Phase 6: Enterprise Security, Authentication, RBAC & Audit Logging
-- User models and roles (`ADMIN`, `OPERATIONS_ANALYST`, `AUDITOR`).
-- Password hashing with bcrypt, JWT token generation and refresh.
-- FastAPI dependency-based RBAC on sensitive endpoints.
-- Comprehensive Audit Log model: User, IP, timestamp, action type, tool name, execution status, security flags.
-- Prompt injection and jailbreak filter on agent input.
-- Frontend Login page, protected routes, and Audit Log viewer.
+### [ ] Phase 6: Enterprise Security, Authentication, RBAC & Audit Logging
+- User login UI with JWT authentication.
+- RBAC permissions on endpoints (Admin, Analyst, Viewer).
+- Security audit log inspection dashboard.
 
-### Phase 7: Verification, Testing, Docker & Deployment Readiness
-- Backend integration and unit test suite with `pytest` covering all routes, LangGraph states, SQL safety, and RAG.
-- Frontend component tests.
-- Multi-container `docker-compose.yml` (PostgreSQL with pgvector, FastAPI backend, Next.js frontend).
-- Complete documentation: `README.md`, `ARCHITECTURE.md`, `.env.example`, API reference, and video demo guide.
+### [ ] Phase 7: Verification, Testing, Docker & Deployment Readiness
+- Multi-container `docker-compose.yml`.
+- End-to-end integration testing and final documentation.
