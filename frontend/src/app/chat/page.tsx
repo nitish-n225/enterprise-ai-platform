@@ -14,13 +14,221 @@ import {
   ChevronDown,
   ChevronRight,
   Database,
-  Search,
-  AlertCircle,
+  BarChart3,
+  TrendingUp,
+  TrendingDown,
+  ShieldCheck,
   CheckCircle2,
   Cpu,
   Layers,
   ArrowRight,
+  Code2,
 } from "lucide-react";
+
+// Markdown and Table Parser Component
+function FormattedMessage({ content }: { content: string }) {
+  const lines = content.split("\n");
+  const elements: React.ReactNode[] = [];
+  let tableRows: string[][] = [];
+  let inTable = false;
+
+  const flushTable = (key: number) => {
+    if (tableRows.length > 0) {
+      const headerRow = tableRows[0];
+      const dataRows = tableRows.slice(2); // Skip separator row (---)
+      elements.push(
+        <div key={`table-${key}`} className="my-3 overflow-x-auto rounded-lg border border-slate-200">
+          <table className="min-w-full divide-y divide-slate-200 text-xs">
+            <thead className="bg-slate-50 text-slate-700 font-semibold">
+              <tr>
+                {headerRow.map((cell, idx) => (
+                  <th key={idx} className="px-3 py-2 text-left tracking-wider">
+                    {cell.replace(/`/g, "").trim()}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 bg-white text-slate-700">
+              {dataRows.map((row, rIdx) => (
+                <tr key={rIdx} className={rIdx % 2 === 0 ? "bg-white" : "bg-slate-50/50"}>
+                  {row.map((cell, cIdx) => (
+                    <td key={cIdx} className="px-3 py-2 whitespace-nowrap">
+                      {cell.replace(/\*\*/g, "").replace(/`/g, "").trim()}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      );
+      tableRows = [];
+      inTable = false;
+    }
+  };
+
+  lines.forEach((line, idx) => {
+    const trimmed = line.trim();
+    if (trimmed.startsWith("|") && trimmed.endsWith("|")) {
+      inTable = true;
+      const cells = trimmed
+        .slice(1, -1)
+        .split("|")
+        .map((c) => c.trim());
+      tableRows.push(cells);
+    } else {
+      if (inTable) {
+        flushTable(idx);
+      }
+
+      if (trimmed.startsWith("### ")) {
+        elements.push(
+          <h3 key={idx} className="text-sm font-bold text-slate-900 mt-2.5 mb-1.5">
+            {trimmed.replace("### ", "")}
+          </h3>
+        );
+      } else if (trimmed.startsWith("- **")) {
+        const parts = trimmed.replace("- **", "").split("**:");
+        elements.push(
+          <div key={idx} className="text-xs text-slate-700 my-1 flex items-start space-x-1">
+            <span className="font-semibold text-slate-900">{parts[0]}:</span>
+            <span>{parts.slice(1).join("**:").trim()}</span>
+          </div>
+        );
+      } else if (trimmed.startsWith("> ")) {
+        elements.push(
+          <blockquote
+            key={idx}
+            className="my-2 border-l-2 border-indigo-400 pl-3 italic text-xs text-slate-600 bg-indigo-50/40 py-1 rounded-r"
+          >
+            {trimmed.replace("> ", "")}
+          </blockquote>
+        );
+      } else if (trimmed.startsWith("**[SIMULATED RESPONSE")) {
+        elements.push(
+          <div
+            key={idx}
+            className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-[11px] font-semibold mb-2"
+          >
+            <span>⚡ Simulated Response (Safe Mock Mode)</span>
+          </div>
+        );
+      } else if (trimmed) {
+        elements.push(
+          <p key={idx} className="text-xs leading-relaxed my-1">
+            {line}
+          </p>
+        );
+      }
+    }
+  });
+
+  if (inTable) {
+    flushTable(lines.length);
+  }
+
+  return <div className="space-y-1">{elements}</div>;
+}
+
+// Visual Analytics Card for BI Tools
+function VisualAnalyticsCard({ tools }: { tools: ToolActivity[] }) {
+  const pandasTool = tools.find((t) => t.tool === "pandas_analytics");
+  if (!pandasTool || !pandasTool.data) return null;
+
+  const data = pandasTool.data;
+
+  // Regional Sales Bar Chart
+  if (data.regions && typeof data.regions === "object") {
+    const regionEntries = Object.entries(data.regions) as [string, any][];
+    return (
+      <div className="bg-indigo-50/50 border border-indigo-100 rounded-xl p-3 text-xs space-y-2 mt-2">
+        <div className="flex items-center justify-between font-semibold text-slate-800">
+          <div className="flex items-center space-x-1.5">
+            <BarChart3 className="w-3.5 h-3.5 text-indigo-600" />
+            <span>Regional Sales Distribution</span>
+          </div>
+          <span className="text-[10px] text-indigo-700 bg-indigo-100/80 px-2 py-0.5 rounded-full font-mono">
+            Top: {data.top_region} ({data.top_region_share_pct}%)
+          </span>
+        </div>
+        <div className="space-y-1.5 pt-1">
+          {regionEntries.map(([name, reg], i) => (
+            <div key={i} className="space-y-0.5">
+              <div className="flex justify-between text-[11px] text-slate-600">
+                <span className="font-medium">{name}</span>
+                <span className="font-mono text-slate-700">
+                  ${reg.net_revenue.toLocaleString()} ({reg.share_percent}%)
+                </span>
+              </div>
+              <div className="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
+                <div
+                  className="bg-indigo-600 h-1.5 rounded-full transition-all duration-500"
+                  style={{ width: `${reg.share_percent}%` }}
+                ></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // Month over Month KPI Badge
+  if (data.growth_percent !== undefined) {
+    const isPositive = data.growth_percent >= 0;
+    return (
+      <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs flex items-center justify-between mt-2">
+        <div>
+          <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">
+            MoM Net Revenue Growth
+          </div>
+          <div className="flex items-baseline space-x-2 mt-0.5">
+            <span className={`text-base font-bold ${isPositive ? "text-emerald-600" : "text-rose-600"}`}>
+              {data.growth_percent > 0 ? "+" : ""}
+              {data.growth_percent}%
+            </span>
+            <span className="text-[11px] text-slate-500">
+              (${data.current_revenue?.toLocaleString()} vs ${data.prior_revenue?.toLocaleString()})
+            </span>
+          </div>
+        </div>
+        <div
+          className={`p-2 rounded-lg ${
+            isPositive ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"
+          }`}
+        >
+          {isPositive ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
+        </div>
+      </div>
+    );
+  }
+
+  // Top Products Revenue
+  if (data.top_products && Array.isArray(data.top_products)) {
+    return (
+      <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs space-y-2 mt-2">
+        <div className="flex items-center space-x-1.5 font-semibold text-slate-800">
+          <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+          <span>Top Product Revenue Rankings</span>
+        </div>
+        <div className="space-y-1">
+          {data.top_products.slice(0, 3).map((prod: any, idx: number) => (
+            <div key={idx} className="flex items-center justify-between text-[11px]">
+              <span className="truncate pr-2 font-medium text-slate-700">
+                #{idx + 1} {prod.name}
+              </span>
+              <span className="font-mono text-indigo-600 font-semibold shrink-0">
+                ${prod.total_revenue?.toLocaleString()}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return null;
+}
 
 export default function ChatPage() {
   const [sessions, setSessions] = useState<ChatSessionSummary[]>([]);
@@ -32,21 +240,20 @@ export default function ChatPage() {
   const [expandedSteps, setExpandedSteps] = useState<{ [msgId: number]: boolean }>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Suggested prompts
+  // Suggested prompts for Phase 3
   const suggestions = [
-    { label: "Total Sales", prompt: "What were our total sales this month?" },
-    { label: "MoM Growth", prompt: "Compare this month's sales with last month." },
-    { label: "Top Products", prompt: "Find the top five products by revenue." },
+    { label: "Total Revenue", prompt: "What was our total revenue?" },
+    { label: "MoM Growth", prompt: "Compare this month's revenue with last month." },
+    { label: "Top 5 Products", prompt: "Which five products generated the highest revenue?" },
+    { label: "Regional Sales", prompt: "Which region generated the most sales?" },
     { label: "Refund Policy", prompt: "Search company documents for our refund policy." },
     { label: "Escalate Ticket", prompt: "Please escalate an urgent support ticket for gateway timeout" },
   ];
 
-  // Fetch sessions on load
   useEffect(() => {
     loadSessions();
   }, []);
 
-  // When session changes, load messages
   useEffect(() => {
     if (currentSessionId) {
       loadHistory(currentSessionId);
@@ -55,7 +262,6 @@ export default function ChatPage() {
     }
   }, [currentSessionId]);
 
-  // Scroll to bottom when messages update
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
@@ -108,7 +314,6 @@ export default function ChatPage() {
     setError(null);
     setInputMessage("");
 
-    // Optimistically add user message
     const tempUserMsg: ChatMessageItem = {
       id: Date.now(),
       session_id: currentSessionId || "temp",
@@ -130,7 +335,6 @@ export default function ChatPage() {
         setCurrentSessionId(response.session_id);
       }
 
-      // Add assistant message
       const assistantMsg: ChatMessageItem = {
         id: response.message_id,
         session_id: response.session_id,
@@ -145,12 +349,10 @@ export default function ChatPage() {
       };
 
       setMessages((prev) => {
-        // Replace or append
         const filtered = prev.filter((m) => m.id !== tempUserMsg.id);
         return [...filtered, tempUserMsg, assistantMsg];
       });
 
-      // Reload sessions list to update titles/timestamps
       loadSessions();
     } catch (err: any) {
       setError(err.message || "Error communicating with AI agent");
@@ -231,7 +433,7 @@ export default function ChatPage() {
                 AI Business Operations Agent
               </h3>
               <p className="text-[11px] text-slate-400">
-                LangGraph State Machine with Multi-Tool Deterministic Dispatch
+                Safe SQL AST Engine & Pandas Business Intelligence
               </p>
             </div>
           </div>
@@ -239,7 +441,7 @@ export default function ChatPage() {
           <div className="flex items-center space-x-2">
             <span className="text-[11px] font-medium px-2.5 py-1 rounded-full bg-slate-100 border border-slate-200 text-slate-600 flex items-center space-x-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-              <span>Mock Engine Active</span>
+              <span>AST Guard & BI Active</span>
             </span>
           </div>
         </div>
@@ -252,10 +454,10 @@ export default function ChatPage() {
                 <Sparkles className="w-7 h-7" />
               </div>
               <h2 className="text-lg font-bold text-slate-900">
-                How can I assist your operations?
+                Operational Intelligence & Analytics
               </h2>
               <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
-                Ask about company revenues, query orders, search refund and SLA policies, or stage high-impact actions for human approval.
+                Query business revenues, analyze product performance, inspect regional trends with Pandas, or search enterprise policy documents.
               </p>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-6 w-full text-left">
@@ -306,7 +508,16 @@ export default function ChatPage() {
                             : "bg-indigo-600 text-white shadow-sm"
                         }`}
                       >
-                        <div className="whitespace-pre-wrap">{msg.content}</div>
+                        {isAssistant ? (
+                          <FormattedMessage content={msg.content} />
+                        ) : (
+                          <div className="whitespace-pre-wrap">{msg.content}</div>
+                        )}
+
+                        {/* Interactive Visual Analytics Widgets */}
+                        {isAssistant && msg.tool_activity && (
+                          <VisualAnalyticsCard tools={msg.tool_activity} />
+                        )}
                       </div>
 
                       {/* Assistant Metadata & LangGraph Activity */}
@@ -347,7 +558,7 @@ export default function ChatPage() {
                                 ))}
                               </div>
 
-                              {/* Tool Results Summary */}
+                              {/* Tool Results Summary & SQL Details */}
                               {msg.tool_activity && msg.tool_activity.length > 0 && (
                                 <div className="mt-2 pt-2 border-t border-slate-200">
                                   <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-1">
@@ -356,15 +567,22 @@ export default function ChatPage() {
                                   {msg.tool_activity.map((tool, idx) => (
                                     <div
                                       key={idx}
-                                      className="bg-white p-2 rounded-lg border border-slate-200 text-[11px] space-y-1"
+                                      className="bg-white p-2.5 rounded-lg border border-slate-200 text-[11px] space-y-1.5"
                                     >
                                       <div className="flex items-center justify-between font-mono font-semibold text-slate-700">
                                         <span>tool: {tool.tool}</span>
-                                        <span className="text-emerald-600 uppercase font-sans text-[10px]">
-                                          {tool.status}
+                                        <span className="text-emerald-600 uppercase font-sans text-[10px] font-bold">
+                                          {tool.status || "SUCCESS"}
                                         </span>
                                       </div>
-                                      <p className="text-slate-500 font-sans">{tool.summary}</p>
+                                      <p className="text-slate-600 font-sans">{tool.summary}</p>
+                                      {/* Show sanitized SQL query if tool was safe_sql */}
+                                      {tool.tool === "safe_sql" && (tool as any).sanitized_query && (
+                                        <div className="mt-1 p-2 bg-slate-900 text-slate-200 rounded font-mono text-[10px] overflow-x-auto flex items-start space-x-1.5">
+                                          <Code2 className="w-3 h-3 text-indigo-400 shrink-0 mt-0.5" />
+                                          <span>{(tool as any).sanitized_query}</span>
+                                        </div>
+                                      )}
                                     </div>
                                   ))}
                                 </div>
@@ -395,7 +613,7 @@ export default function ChatPage() {
               <div className="bg-white border border-slate-200 rounded-2xl px-5 py-3 shadow-sm flex items-center space-x-3">
                 <span className="w-2 h-2 rounded-full bg-indigo-600 animate-pulse"></span>
                 <span className="text-xs text-slate-500 font-medium">
-                  LangGraph Orchestrator executing workflow...
+                  LangGraph Orchestrator querying business database...
                 </span>
               </div>
             </div>
@@ -403,7 +621,7 @@ export default function ChatPage() {
 
           {error && (
             <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center space-x-2">
-              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0"></span>
               <span>{error}</span>
             </div>
           )}
@@ -424,7 +642,7 @@ export default function ChatPage() {
               type="text"
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
-              placeholder="Ask a business inquiry (e.g. 'What were our total sales this month?')..."
+              placeholder="Ask a business inquiry (e.g. 'What was our total revenue?')..."
               disabled={loading}
               className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
             />
@@ -441,4 +659,3 @@ export default function ChatPage() {
     </div>
   );
 }
-

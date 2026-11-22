@@ -15,10 +15,10 @@
 
 ## 2. Environment & Tool Assessment
 - **Operating System:** Windows 11 AMD64
-- **Python:** 3.14.7 (FastAPI, SQLAlchemy, Pandas, LangGraph, Google-GenAI, Pytest installed)
+- **Python:** 3.14.7 (FastAPI, SQLAlchemy, Pandas, LangGraph, Google-GenAI, SQLGlot, Pytest installed)
 - **Node.js:** v24.14.0 | **npm:** 11.9.0
 - **Git:** 2.52.0 (Initialized in workspace)
-- **Docker:** Supported via dual-engine persistence (PostgreSQL + pgvector for containerized production, SQLite WAL for zero-config local development and testing) and full Docker Compose configuration.
+- **Database:** SQLite WAL (development) and PostgreSQL with pgvector (production)
 
 ---
 
@@ -50,9 +50,9 @@
 |        ▼                                                                          |
 |   [2. Task Planner & Tool Selector]                                               |
 |        │                                                                          |
-|        ├──► (Safe SQL Tool: Read-Only, AST Sanitized, Row Limit)                  |
+|        ├──► (Safe SQL Engine: SQLGlot AST, Whitelisted Tables, Clamped LIMIT 100) |
+|        ├──► (Pandas BI Engine: MoM Trend, Revenue Aggs, Top Products, Regional)   |
 |        ├──► (RAG Tool: Document Chunk Retrieval & Citation)                       |
-|        ├──► (Pandas BI Tool: MoM, Aggregations, Anomaly Detection)                |
 |        └──► (HITL Action Tool: Pending Approval Queue)                           |
 |        │                                                                          |
 |        ▼                                                                          |
@@ -61,16 +61,6 @@
 |        ▼                                                                          ▼|
 |   [4. Response Synthesizer & Source Attributor]                    [Fallback / Err]|
 +-----------------------------------------+-----------------------------------------+
-                                          |
-                   +----------------------+----------------------+
-                   |                                             |
-                   v                                             v
-+-------------------------------------+       +-------------------------------------+
-|        Data Layer & Persistence     |       |          AI & LLM Provider          |
-| - Relational DB: SQLite / PostgreSQL|       | - Google Gemini 2.5 / 1.5 Flash     |
-| - Vector Store: FAISS / pgvector    |       | - Structured Outputs & Function Call|
-| - Audit Logs, Orders, Approvals     |       | - Transparent Safe Mock Mode Fallback|
-+-------------------------------------+       +-------------------------------------+
 ```
 
 ---
@@ -96,12 +86,27 @@
 - [x] Modern responsive Chat UI with active LangGraph execution timeline, tool breakdown drawer, suggestion pills, and session switching.
 - [x] Comprehensive test suite: 21 passing tests covering Gemini configuration, mock mode, intent classification, agent workflow, iteration limits, chat endpoints, and session persistence.
 
-### [ ] Phase 3: Business Database, Safe SQL Engine & Pandas Analytics (Upcoming)
-- Advanced text-to-SQL generation with SQLGlot AST verification.
-- Interactive SQL viewer and query explanation in frontend.
-- Dedicated Business Analytics Dashboard with charts and KPI filters.
+### [x] Phase 3: Business Database, Safe SQL Engine & Pandas Analytics (Completed)
+- [x] Reliable Business Data Service layer (`backend/app/services/business_data.py`) querying Customers, Products, Orders, OrderItems, SalesRecords.
+- [x] AST-verified Safe Text-to-SQL Engine (`backend/app/agent/safe_sql.py`) using SQLGlot:
+  - Whitelist schema tables: `customers`, `products`, `orders`, `order_items`, `sales_records`.
+  - Rejection of all DDL/DML mutation statements (`INSERT`, `UPDATE`, `DELETE`, `DROP`, `ALTER`, `CREATE`, `TRUNCATE`, `EXEC`).
+  - Rejection of multiple statements.
+  - Rejection of sensitive/system tables (`users`, `audit_logs`, `sqlite_master`, etc.).
+  - Automatic `LIMIT 100` clamping and 5.0-second execution timeouts.
+- [x] Deterministic Pandas Analytics Engine (`backend/app/services/analytics.py`):
+  - Total enterprise gross & net revenue calculation.
+  - Month-over-Month (MoM) growth % with division-by-zero & single-period safety.
+  - Top 5 products by revenue and volume sold.
+  - Regional sales distribution and market share %.
+  - Customer cohort spending by tier (Enterprise, Mid-Market, SMB).
+- [x] Frontend Chat UI enhancements:
+  - Custom markdown table parser with zebra striping.
+  - Interactive visual analytics cards (Regional sales distribution bars, MoM growth badge, Top products ranking).
+  - Sanitized SQL query viewer showing the exact AST-verified query executed.
+- [x] Comprehensive test suite: 39 tests passing across Phase 1, Phase 2, and Phase 3.
 
-### [ ] Phase 4: Document Upload, Vector Embeddings & RAG Knowledge Base
+### [ ] Phase 4: Document Upload, Vector Embeddings & RAG Knowledge Base (Upcoming)
 - File upload UI (PDF, TXT, Markdown).
 - Ingestion pipeline with chunking and vector embeddings.
 - Semantic search viewer and document chunk citations.
