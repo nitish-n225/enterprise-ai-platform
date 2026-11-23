@@ -142,7 +142,7 @@ class EnterpriseTools:
                     doc_chunks = []
                     for doc in docs:
                         chunk = db.query(DocumentChunk).filter(DocumentChunk.document_id == doc.id).first()
-                        content = chunk.chunk_text if chunk else f"Verified internal corporate document: {doc.filename}"
+                        content = chunk.content if chunk else f"Verified internal corporate document: {doc.filename}"
                         doc_chunks.append({
                             "chunk_id": chunk.id if chunk else 1,
                             "document_id": doc.id,
