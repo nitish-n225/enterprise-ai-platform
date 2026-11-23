@@ -14,7 +14,7 @@ import {
   User,
 } from "@/types";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://enterprise-ai-backend-svz0.onrender.com";
 
 class ApiService {
   private getHeaders(): HeadersInit {
