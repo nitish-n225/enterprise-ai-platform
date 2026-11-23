@@ -19,3 +19,4 @@ class ReportResponse(BaseModel):
     created_at: datetime
     summary: Optional[str] = None
     download_url: Optional[str] = None
+

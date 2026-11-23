@@ -74,3 +74,4 @@ def test_audit_logging_and_stats(client):
     assert stats["total_events"] >= 1
     assert "actions_breakdown" in stats
     assert "recent_activity" in stats
+

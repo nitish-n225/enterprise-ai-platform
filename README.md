@@ -1,6 +1,8 @@
-# Enterprise AI Business Operations Agent
+# Enterprise AI Business Operations Platform
 
 A production-grade, portfolio-ready Agentic AI business operations platform built with **FastAPI**, **LangGraph**, **Google Gemini**, **SQLGlot**, **Pandas**, **SQLAlchemy**, and **Next.js 14**.
+
+The application delivers an autonomous, governed operational assistant that performs AST-verified safe Text-to-SQL queries, automated business analytics, policy-grounded document knowledge retrieval (RAG), publication-grade PDF/CSV report generation, and Human-in-the-Loop (HITL) action governance.
 
 ---
 
@@ -66,6 +68,7 @@ A production-grade, portfolio-ready Agentic AI business operations platform buil
 ### 3. LangGraph Cyclical Orchestration
 - State machine pipeline: Request Classification -> Task Planning -> Tool Dispatch -> Result Validation -> Response Synthesis.
 - Hard safety ceiling of **5 iterations maximum** with automatic loop detection.
+- Transparent Safe Mock Mode (`[SIMULATED RESPONSE - MOCK MODE]`) ensures seamless zero-configuration local development when `GEMINI_API_KEY` is not provided.
 
 ### 4. Vector RAG & Document Knowledge Base
 - **Multi-Format Ingestion:** Ingests PDF (`pypdf`), DOCX (`python-docx`), and TXT files up to 15MB.
@@ -84,18 +87,15 @@ A production-grade, portfolio-ready Agentic AI business operations platform buil
 - **Role-Based Access Control (RBAC):** Tiered permissions across `admin` (unrestricted), `analyst` (queries, analytics, reports), and `viewer` (read-only executive access).
 - **Compliance Audit Logging:** Immutable security ledger capturing user logins, failed attempts, document operations, report generations, and HITL authorization decisions with client IP and JSON payloads.
 
-### 7. Enterprise SaaS UI (Next.js 14)
-- **AI Operations Chat:** Real-time Markdown table parser, interactive visual analytics cards (Regional bars, MoM growth badge, Top products ranking, HITL Action alert card), SQL query viewer, and persistent session drawer.
-- **Knowledge Base (`/knowledge`):** Document upload zone with 15MB drag-and-drop validation, document repository with status pills and SHA-256 hashes, chunk inspector modal, and interactive vector search playground.
-- **Business Analytics (`/analytics`):** Real-time financial KPI cards, MoM growth trend banner, top products ranking, regional market share distribution, and customer tier cohorts.
-- **Reports Generator (`/reports`):** Interactive report generator supporting Executive Summary, Detailed Sales, and Regional Performance in both styled PDF and raw CSV, with instant browser downloads and historical archive.
-- **Human Approvals (`/approvals`):** Status-filtered review inbox (Pending, Approved, Rejected) with payload inspection, review notes input, and one-click Approve/Reject authorizations.
-- **Audit Ledger (`/audit`):** Statistical activity ribbon, action type filters, user search, and structured JSON detail inspector drawer.
-- **Settings & Governance (`/settings`):** Infrastructure parameters inspector and interactive RBAC Role Simulator (instant toggle between Admin, Analyst, and Viewer with active privileges matrix).
+### 7. Production Containerization & Deployment
+- **Multi-Stage Dockerfiles:**
+  - `backend/Dockerfile`: Multi-stage Python 3.12-slim build with non-root `appuser`, pre-compiled C-extensions, persistent volumes for uploads/reports, and integrated health checks.
+  - `frontend/Dockerfile`: Multi-stage Node 20-alpine build with `deps`, `builder`, and `runner` stages, unprivileged `nextjs` user, and health check probes.
+- **Docker Compose:** Production stack orchestrating PostgreSQL 16 with pgvector (`pgvector/pgvector:pg16`), the FastAPI backend, and Next.js frontend with automated healthcheck dependencies and isolated bridge network.
 
 ---
 
-## Verified Database Metrics (Phase 3 Live Execution)
+## Verified Database Metrics (Live Execution)
 
 | User Inquiry | Classified Intent | Tool Executed | Actual Database Result |
 |---|---|---|---|
@@ -106,46 +106,100 @@ A production-grade, portfolio-ready Agentic AI business operations platform buil
 
 ---
 
-## Quickstart Guide
+## Deployment & Running the Platform
 
-### 1. Environment Setup
+### Option A: Docker Compose (Full Production Stack)
+
+The Docker Compose configuration spins up PostgreSQL 16 with pgvector, the FastAPI backend, and the Next.js frontend in a self-healing private network.
+
+```bash
+# 1. Clone repository and copy environment file
+cp .env.example .env
+
+# 2. Build and start all services
+docker compose up --build -d
+
+# 3. Verify container health status
+docker compose ps
+```
+
+Services exposed:
+- **Frontend SaaS UI:** [http://localhost:3000](http://localhost:3000)
+- **FastAPI Swagger Docs:** [http://localhost:8000/docs](http://localhost:8000/docs)
+- **PostgreSQL Database:** `localhost:5432` (`enterprise_ai_ops`)
+
+To stop the containers:
+```bash
+docker compose down
+```
+
+---
+
+### Option B: Local Development (Zero-Config SQLite Mode)
+
+For rapid local iteration, the system uses an embedded SQLite database in WAL mode with zero external dependencies.
+
+#### 1. Configure Environment
 ```bash
 cp .env.example .env
 ```
-*(To use live Google Gemini, configure `GEMINI_API_KEY` in `.env`. If left empty, the application automatically runs in Safe Mock Mode).*
+*(To use live Google Gemini, add your `GEMINI_API_KEY` to `.env`. Leave empty for Safe Mock Mode).*
 
-### 2. Run the Backend API
+#### 2. Run the FastAPI Backend
 ```powershell
 python -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 - Interactive Swagger Docs: `http://127.0.0.1:8000/docs`
 - Health Endpoint: `http://127.0.0.1:8000/api/health`
 
-### 3. Run the Frontend UI
+#### 3. Run the Next.js Frontend
 ```powershell
 cd frontend
 npm run dev
 ```
-- Open `http://localhost:3000/chat` to test queries.
+- Open `http://localhost:3000/chat` in your browser.
 
 ---
 
-## Running Automated Tests
+## Pre-Seeded Demonstration Accounts
 
-Run the complete backend test suite (62 tests):
+| Role | Username | Password | Privileges |
+|:-----|:---------|:---------|:-----------|
+| **Administrator** | `admin` | `Admin@123` | Full system control, document management, approvals, user administration |
+| **Analyst** | `analyst` | `Analyst@123` | Safe SQL queries, Pandas analytics, RAG search, report exports, audit inspection |
+| **Viewer** | `viewer` | `Viewer@123` | Read-only executive dashboards, queries, and report downloads |
+
+---
+
+## Comprehensive Automated Test Suite
+
+Run the full test suite (62 passing tests in ~2.5 seconds):
+
 ```powershell
 python -m pytest backend/tests -v
 ```
 
-**Test Suite Coverage:**
-- `test_auth_and_rbac.py`: Bcrypt login, invalid credentials rejection, JWT profile retrieval, admin user listing, analyst 403 Forbidden enforcement, and audit ledger querying.
-- `test_reports_and_approvals.py`: PDF `%PDF-` generation, CSV RFC 4180 export, report download endpoint with headers, chat agent approval staging, and review authorization lifecycle.
-- `test_document_processing.py`: PDF/DOCX/TXT text extraction, magic byte header verification, path traversal sanitization, SHA-256 duplicate detection, OCR warning on image-only PDFs.
-- `test_vector_rag.py`: 768-dim embeddings, vector similarity search, grounded citation extraction, and non-matching query refusal.
-- `test_phase4_e2e.py`: End-to-end multi-step RAG flow via TestClient, including document listing, semantic vector search, agent RAG chat with citations, refusal of irrelevant queries, and business analytics integration.
-- `test_safe_sql.py`: Rejection of `INSERT`, `UPDATE`, `DELETE`, `DROP`, `ALTER`, multiple queries, sensitive tables (`users`, `sqlite_master`), limit clamping, and query execution.
-- `test_analytics.py`: Calculation of total revenue, MoM growth %, top products, regional shares, customer cohorts, and edge cases.
-- `test_agent_workflow.py`: LangGraph state machine, SQL flow, RAG flow, and 5-iteration limit.
-- `test_chat_api.py`: `/api/chat` and `/api/chat/history` request validation, sanitization, and session persistence.
-- `test_gemini_config.py`: Gemini client config, mock mode detection, and prompt injection defense.
-- `test_health.py` & `test_database.py`: Health checks and synthetic database seeder verification.
+### Test Suite Structure:
+- `test_auth_and_rbac.py` (6 tests): Bcrypt hashing, JWT generation, admin user listing, analyst 403 Forbidden enforcement, and audit ledger querying.
+- `test_reports_and_approvals.py` (5 tests): PDF `%PDF-` generation, CSV RFC 4180 export, report download endpoint with headers, chat agent approval staging, and review authorization lifecycle.
+- `test_document_processing.py` (6 tests): PDF/DOCX/TXT text extraction, magic byte header verification, path traversal sanitization, SHA-256 duplicate detection, OCR warning on image-only PDFs.
+- `test_vector_rag.py` (6 tests): 768-dim embeddings, vector similarity search, grounded citation extraction, and non-matching query refusal.
+- `test_phase4_e2e.py` (1 test): Multi-step end-to-end RAG flow via TestClient, including document listing, semantic vector search, agent RAG chat with citations, refusal of irrelevant queries, and business analytics integration.
+- `test_safe_sql.py` (12 tests): Rejection of `INSERT`, `UPDATE`, `DELETE`, `DROP`, `ALTER`, multiple queries, sensitive tables (`users`, `sqlite_master`), limit clamping, and query execution.
+- `test_analytics.py` (5 tests): Calculation of total revenue, MoM growth %, top products, regional shares, customer cohorts, and edge cases.
+- `test_agent_workflow.py` (4 tests): LangGraph state machine, SQL flow, RAG flow, and 5-iteration limit.
+- `test_chat_api.py` (4 tests): `/api/chat` and `/api/chat/history` request validation, sanitization, and session persistence.
+- `test_gemini_config.py` (4 tests): Gemini client config, mock mode detection, and prompt injection defense.
+- `test_health.py` (3 tests) & `test_database.py` (6 tests): Health checks, database connections, and synthetic enterprise seeder verification.
+
+### Frontend Production Build:
+```powershell
+cd frontend
+npm run build
+```
+Result: **11/11 static pages generated cleanly** (`/`, `/_not-found`, `/analytics`, `/approvals`, `/audit`, `/chat`, `/knowledge`, `/reports`, `/settings`).
+
+---
+
+## License
+MIT

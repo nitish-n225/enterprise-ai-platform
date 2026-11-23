@@ -15,3 +15,4 @@ class Report(Base, TimestampMixin):
     generated_by = Column(String(100), default="system", nullable=False)
     parameters_json = Column(Text, nullable=True)
     summary = Column(Text, nullable=True)
+

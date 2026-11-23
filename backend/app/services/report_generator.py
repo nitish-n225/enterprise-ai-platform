@@ -29,7 +29,7 @@ from backend.app.services.analytics import PandasAnalyticsEngine
 
 logger = logging.getLogger("enterprise_ai.services.report_generator")
 
-REPORTS_DIR = os.path.abspath("./data/reports")
+REPORTS_DIR = os.path.abspath(settings.REPORTS_DIR)
 os.makedirs(REPORTS_DIR, exist_ok=True)
 
 class NumberedCanvas(canvas.Canvas):

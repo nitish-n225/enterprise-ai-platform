@@ -25,3 +25,4 @@ class ApprovalResponse(BaseModel):
     resolution_notes: Optional[str] = None
     resolved_at: Optional[datetime] = None
     created_at: datetime
+

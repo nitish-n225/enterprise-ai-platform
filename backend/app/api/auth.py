@@ -92,3 +92,4 @@ def list_system_users(
     Lists registered users (restricted to administrators).
     """
     return db.query(User).all()
+

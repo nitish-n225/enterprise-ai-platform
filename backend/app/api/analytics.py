@@ -43,3 +43,4 @@ def get_customer_cohorts(db: Session = Depends(get_db)) -> Dict[str, Any]:
     Returns customer cohort analysis by enterprise tier.
     """
     return PandasAnalyticsEngine.compute_customer_cohorts(db)
+

@@ -30,6 +30,7 @@ class Settings(BaseSettings):
 
     # Documents & RAG
     UPLOAD_DIR: str = "./data/uploads"
+    REPORTS_DIR: str = "./data/reports"
     MAX_UPLOAD_SIZE_MB: int = 15
     SIMILARITY_THRESHOLD: float = 0.20
     CHUNKS_PER_QUERY: int = 5

@@ -124,3 +124,4 @@ def delete_report(report_id: int, db: Session = Depends(get_db)):
     db.delete(report)
     db.commit()
     return {"message": f"Report #{report_id} deleted successfully.", "id": report_id}
+
