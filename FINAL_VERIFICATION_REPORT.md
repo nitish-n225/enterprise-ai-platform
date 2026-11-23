@@ -180,3 +180,4 @@ docker compose ps
 - Frontend: [http://localhost:3000](http://localhost:3000)
 - Backend: [http://localhost:8000/docs](http://localhost:8000/docs)
 - PostgreSQL: `localhost:5432` (`enterprise_ai_ops`)
+
