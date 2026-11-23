@@ -288,6 +288,18 @@ export default function ChatPage() {
 
   useEffect(() => {
     loadSessions();
+
+    // Support query parameter from dashboard or URL
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const initialQuery = params.get("q") || params.get("prompt");
+      if (initialQuery) {
+        window.history.replaceState({}, "", window.location.pathname);
+        setTimeout(() => {
+          handleSendMessage(initialQuery);
+        }, 350);
+      }
+    }
   }, []);
 
   useEffect(() => {
@@ -649,7 +661,7 @@ export default function ChatPage() {
               <div className="bg-white border border-slate-200 rounded-2xl px-5 py-3 shadow-sm flex items-center space-x-3">
                 <span className="w-2 h-2 rounded-full bg-indigo-600 animate-pulse"></span>
                 <span className="text-xs text-slate-500 font-medium">
-                  LangGraph Orchestrator querying business database...
+                  Autonomous Agent executing LangGraph workflow across SQL, BI, and RAG tools...
                 </span>
               </div>
             </div>
