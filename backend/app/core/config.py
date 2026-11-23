@@ -1,4 +1,5 @@
 from typing import List
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
@@ -46,5 +47,24 @@ class Settings(BaseSettings):
         "http://localhost:8000",
         "http://127.0.0.1:8000"
     ]
+
+    @model_validator(mode="after")
+    def validate_production_security(self) -> "Settings":
+        if self.APP_ENV == "production":
+            insecure_defaults = [
+                "dev-insecure-secret-key-replace-in-production-32-chars-min",
+                "change_this_to_a_secure_random_32_character_string_for_production",
+                "secret",
+                "default",
+                "password",
+                "123456"
+            ]
+            key = (self.SECRET_KEY or "").strip()
+            if not key or key in insecure_defaults or len(key) < 32:
+                raise ValueError(
+                    "Production configuration error: SECRET_KEY must be a cryptographically secure random string "
+                    "of at least 32 characters, and cannot use default/insecure placeholder values."
+                )
+        return self
 
 settings = Settings()

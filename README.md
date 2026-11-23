@@ -163,17 +163,20 @@ npm run dev
 
 ## Pre-Seeded Demonstration Accounts
 
+> [!NOTE]
+> These demo accounts are pre-seeded for development and local testing purposes only.
+
 | Role | Username | Password | Privileges |
 |:-----|:---------|:---------|:-----------|
-| **Administrator** | `admin` | `Admin@123` | Full system control, document management, approvals, user administration |
-| **Analyst** | `analyst` | `Analyst@123` | Safe SQL queries, Pandas analytics, RAG search, report exports, audit inspection |
-| **Viewer** | `viewer` | `Viewer@123` | Read-only executive dashboards, queries, and report downloads |
+| **Administrator** | `admin` | `admin123` | Full system control, document management, approvals, user administration |
+| **Analyst** | `analyst` | `analyst123` | Safe SQL queries, Pandas analytics, RAG search, report exports, audit inspection |
+| **Viewer** | `viewer` | `viewer123` | Read-only executive dashboards, queries, and report downloads |
 
 ---
 
 ## Comprehensive Automated Test Suite
 
-Run the full test suite (62 passing tests in ~2.5 seconds):
+Run the full test suite (71 passing tests in ~4.0 seconds):
 
 ```powershell
 python -m pytest backend/tests -v

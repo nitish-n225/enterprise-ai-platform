@@ -5,6 +5,8 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, s
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
 from backend.app.core.database import get_db
+from backend.app.core.security import get_current_user_optional
+from backend.app.models.user import User
 from backend.app.models.rag import Document, DocumentChunk
 from backend.app.models.audit import AuditLog
 from backend.app.services.document_processor import document_processor
@@ -26,13 +28,20 @@ router = APIRouter(prefix="/documents", tags=["Knowledge Base & Documents"])
 async def upload_document(
     file: UploadFile = File(...),
     description: Optional[str] = Form(None),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user_optional)
 ):
     """
     Secure document ingestion endpoint.
     Validates file format (PDF, TXT, DOCX), checks magic headers, enforces size limits,
     extracts text, generates 768-dim embeddings, and stores chunks with page numbers.
     """
+    if current_user and current_user.role == "viewer":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Forbidden: Viewers are not permitted to upload documents. Analyst or Admin role required."
+        )
+
     content_bytes = await file.read()
     if not content_bytes:
         raise HTTPException(
@@ -142,10 +151,20 @@ def search_documents(payload: DocumentSearchRequest, db: Session = Depends(get_d
     return results
 
 @router.delete("/{document_id}")
-def delete_document(document_id: int, db: Session = Depends(get_db)):
+def delete_document(
+    document_id: int,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user_optional)
+):
     """
     Deletes a document, its indexed chunks, and removes the physical file from disk.
     """
+    if current_user and current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Forbidden: Document deletion requires admin privileges. Current role is '{current_user.role}'."
+        )
+
     doc = db.query(Document).filter(Document.id == document_id).first()
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found.")

@@ -21,10 +21,13 @@ logger = logging.getLogger("enterprise_ai")
 async def lifespan(app: FastAPI):
     # Startup: Create tables and seed data
     logger.info("Initializing Enterprise AI Business Operations Platform...")
-    Base.metadata.create_all(bind=engine)
-    with SessionLocal() as db:
-        seed_database_if_empty(db)
-    logger.info("Application startup and database initialization complete.")
+    try:
+        Base.metadata.create_all(bind=engine)
+        with SessionLocal() as db:
+            seed_database_if_empty(db)
+        logger.info("Application startup and database initialization complete.")
+    except Exception as e:
+        logger.error(f"Database initialization warning on startup (will retry on incoming requests): {e}")
     yield
     # Shutdown logic if needed
     logger.info("Application shutting down.")

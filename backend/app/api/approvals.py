@@ -4,6 +4,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from backend.app.core.database import get_db
+from backend.app.core.security import get_current_user_optional
+from backend.app.models.user import User
 from backend.app.models.approval import ApprovalRequest
 from backend.app.schemas.approvals import (
     ApprovalResponse,
@@ -45,17 +47,26 @@ def stage_approval_request(payload: ApprovalStageRequest, db: Session = Depends(
 def review_approval_request(
     approval_id: int,
     payload: ApprovalReviewRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user_optional)
 ):
     """
     Human-in-the-Loop decision endpoint: allows authenticated operators to APPROVE or REJECT staged actions.
     """
+    if current_user and current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Forbidden: Reviewing approval requests requires admin privileges. Current role is '{current_user.role}'."
+        )
+
+    reviewer_name = current_user.username if current_user else payload.reviewer
+
     try:
         req = approval_service.review_approval(
             db=db,
             approval_id=approval_id,
             decision=payload.decision,
-            reviewer=payload.reviewer,
+            reviewer=reviewer_name,
             notes=payload.notes
         )
         return req

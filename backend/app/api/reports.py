@@ -7,6 +7,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy import desc
 
 from backend.app.core.database import get_db
+from backend.app.core.security import get_current_user_optional
+from backend.app.models.user import User
 from backend.app.models.report import Report
 from backend.app.models.audit import AuditLog
 from backend.app.schemas.reports import ReportGenerateRequest, ReportResponse
@@ -17,10 +19,20 @@ logger = logging.getLogger("enterprise_ai.api.reports")
 router = APIRouter(prefix="/reports", tags=["Business Reports"])
 
 @router.post("/generate", response_model=ReportResponse, status_code=status.HTTP_201_CREATED)
-def generate_report(payload: ReportGenerateRequest, db: Session = Depends(get_db)):
+def generate_report(
+    payload: ReportGenerateRequest,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user_optional)
+):
     """
     Triggers deterministic report generation in PDF or CSV format.
     """
+    if current_user and current_user.role == "viewer":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Forbidden: Viewers cannot trigger report generation. Analyst or Admin role required."
+        )
+
     valid_types = ["executive_summary", "sales_detailed", "regional_breakdown"]
     if payload.report_type not in valid_types:
         raise HTTPException(
@@ -107,10 +119,20 @@ def download_report(report_id: int, db: Session = Depends(get_db)):
     )
 
 @router.delete("/{report_id}")
-def delete_report(report_id: int, db: Session = Depends(get_db)):
+def delete_report(
+    report_id: int,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user_optional)
+):
     """
     Deletes a report record and its file on disk.
     """
+    if current_user and current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Forbidden: Report deletion requires admin privileges. Current role is '{current_user.role}'."
+        )
+
     report = db.query(Report).filter(Report.id == report_id).first()
     if not report:
         raise HTTPException(status_code=404, detail="Report not found.")
