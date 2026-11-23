@@ -33,6 +33,7 @@ export function Sidebar() {
     { label: "Reports Generator", href: "/reports", icon: <FileText className="w-5 h-5" /> },
     { label: "Human Approvals", href: "/approvals", icon: <FileCheck2 className="w-5 h-5" />, badge: "1 Pending" },
     { label: "Security & Audit", href: "/audit", icon: <ShieldCheck className="w-5 h-5" /> },
+    { label: "Admin Portal", href: "/admin", icon: <ShieldCheck className="w-5 h-5 text-indigo-400" />, badge: "Admin" },
     { label: "Settings", href: "/settings", icon: <Settings className="w-5 h-5" /> },
   ];
 

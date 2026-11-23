@@ -326,6 +326,30 @@ class ApiService {
     return res.json();
   }
 
+  async getUsers(): Promise<User[]> {
+    await this.ensureSession();
+    const res = await fetch(`${API_BASE_URL}/api/auth/users`, {
+      headers: this.getHeaders(),
+      cache: "no-store",
+    });
+    if (!res.ok) throw new Error("Failed to fetch system users");
+    return res.json();
+  }
+
+  async ensureSession(): Promise<string> {
+    if (typeof window !== "undefined") {
+      const existing = localStorage.getItem("token");
+      if (existing) return existing;
+      try {
+        const res = await this.login("admin", "admin123");
+        return res.access_token;
+      } catch (e) {
+        return "";
+      }
+    }
+    return "";
+  }
+
   // Security & Audit Logs
   async getAuditLogs(action?: string, userId?: string, limit: number = 50): Promise<AuditLogItem[]> {
     const params = new URLSearchParams();

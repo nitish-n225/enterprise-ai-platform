@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Link from "next/link";
 import { api } from "@/lib/api";
 import { HealthStatus } from "@/types";
 import {
@@ -13,7 +14,11 @@ import {
   Check,
   Plus,
   CheckCircle2,
-  X
+  X,
+  Clock,
+  FileText,
+  Settings,
+  Users
 } from "lucide-react";
 
 export interface WorkspaceOption {
@@ -81,6 +86,14 @@ export function Header() {
   const [isCreatingWorkspace, setIsCreatingWorkspace] = useState(false);
   const [newWorkspaceName, setNewWorkspaceName] = useState("");
 
+  // User Profile state
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState<{ username: string; role: string; email: string }>({
+    username: "admin",
+    role: "admin",
+    email: "admin@enterprise-ai.local",
+  });
+
   const fetchHealth = async () => {
     try {
       setLoading(true);
@@ -98,6 +111,23 @@ export function Header() {
   useEffect(() => {
     fetchHealth();
     const interval = setInterval(fetchHealth, 15000);
+
+    // Auto-initialize admin bearer token and user profile
+    api.ensureSession().then(() => {
+      const savedUser = localStorage.getItem("user");
+      if (savedUser) {
+        try {
+          const u = JSON.parse(savedUser);
+          if (u?.role) {
+            setCurrentUser({
+              username: u.username || "admin",
+              role: u.role,
+              email: u.email || "admin@enterprise-ai.local",
+            });
+          }
+        } catch (e) {}
+      }
+    });
 
     // Initialize workspace from localStorage
     try {
@@ -118,9 +148,17 @@ export function Header() {
     };
     window.addEventListener("workspaceChanged", handleExternalChange);
 
+    const handleRoleChanged = (e: any) => {
+      if (e.detail) {
+        setCurrentUser((prev) => ({ ...prev, role: e.detail, username: e.detail }));
+      }
+    };
+    window.addEventListener("roleChanged", handleRoleChanged);
+
     return () => {
       clearInterval(interval);
       window.removeEventListener("workspaceChanged", handleExternalChange);
+      window.removeEventListener("roleChanged", handleRoleChanged);
     };
   }, []);
 
@@ -163,6 +201,19 @@ export function Header() {
 
     setToastMessage(`Created and activated workspace "${newWs.name}"`);
     setTimeout(() => setToastMessage(null), 3500);
+  };
+
+  const handleUserRoleSwitch = async (role: "admin" | "analyst" | "viewer") => {
+    try {
+      const res = await api.login(role, `${role}123`);
+      setCurrentUser({ username: role, role: role, email: res.user.email });
+      setIsUserMenuOpen(false);
+      setToastMessage(`Active role switched to ${role.toUpperCase()}`);
+      setTimeout(() => setToastMessage(null), 3500);
+      window.dispatchEvent(new CustomEvent("roleChanged", { detail: role }));
+    } catch (err: any) {
+      setToastMessage(`Switch failed: ${err.message}`);
+    }
   };
 
   return (
@@ -342,18 +393,110 @@ export function Header() {
           )}
         </div>
 
-        {/* User Role Badge */}
-        <div className="flex items-center space-x-2 border-l border-slate-200 pl-4">
-          <div className="w-8 h-8 rounded-full bg-indigo-100 border border-indigo-200 flex items-center justify-center text-indigo-700 text-xs font-bold">
-            AD
-          </div>
-          <div className="text-left hidden sm:block">
-            <div className="text-xs font-semibold text-slate-800">Admin User</div>
-            <div className="text-[10px] text-slate-500 flex items-center space-x-1">
-              <Shield className="w-2.5 h-2.5 text-indigo-500" />
-              <span>Full Role (Admin)</span>
+        {/* User Role Badge & Admin Portal Dropdown */}
+        <div className="relative border-l border-slate-200 pl-4">
+          <button
+            type="button"
+            onClick={() => setIsUserMenuOpen((prev) => !prev)}
+            className="flex items-center space-x-2 text-left hover:bg-slate-50 p-1 rounded-lg transition cursor-pointer select-none"
+            title="Open Admin Portal & Profile Menu"
+          >
+            <div className="w-8 h-8 rounded-full bg-indigo-100 border border-indigo-200 flex items-center justify-center text-indigo-700 text-xs font-bold uppercase">
+              {currentUser.role.slice(0, 2)}
             </div>
-          </div>
+            <div className="hidden sm:block">
+              <div className="text-xs font-semibold text-slate-800 capitalize flex items-center space-x-1">
+                <span>{currentUser.username} User</span>
+                <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform ${isUserMenuOpen ? "rotate-180" : ""}`} />
+              </div>
+              <div className="text-[10px] text-slate-500 flex items-center space-x-1">
+                <Shield className="w-2.5 h-2.5 text-indigo-500" />
+                <span className="capitalize">{currentUser.role} Role</span>
+              </div>
+            </div>
+          </button>
+
+          {/* Click-outside backdrop */}
+          {isUserMenuOpen && (
+            <div
+              className="fixed inset-0 z-40 bg-transparent cursor-default"
+              onClick={() => setIsUserMenuOpen(false)}
+            />
+          )}
+
+          {/* User Menu Dropdown */}
+          {isUserMenuOpen && (
+            <div className="absolute right-0 top-full mt-2 w-72 bg-white rounded-xl shadow-2xl border border-slate-200 p-2 z-50">
+              <div className="p-3 border-b border-slate-100 bg-slate-50/60 rounded-lg mb-1">
+                <div className="font-semibold text-xs text-slate-900 capitalize flex items-center justify-between">
+                  <span>{currentUser.username} (Active)</span>
+                  <span className="font-mono text-[9px] uppercase px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700 font-bold">
+                    {currentUser.role}
+                  </span>
+                </div>
+                <div className="text-[11px] text-slate-500 font-mono mt-0.5">{currentUser.email}</div>
+              </div>
+
+              {/* Navigation links */}
+              <div className="py-1 space-y-0.5 text-xs">
+                <Link
+                  href="/admin"
+                  onClick={() => setIsUserMenuOpen(false)}
+                  className="flex items-center space-x-2 px-3 py-2 rounded-lg text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 font-semibold transition"
+                >
+                  <Shield className="w-4 h-4 text-indigo-600" />
+                  <span>Admin Portal & Console</span>
+                </Link>
+                <Link
+                  href="/approvals"
+                  onClick={() => setIsUserMenuOpen(false)}
+                  className="flex items-center space-x-2 px-3 py-2 rounded-lg text-slate-700 hover:bg-slate-50 transition"
+                >
+                  <Clock className="w-4 h-4 text-amber-600" />
+                  <span>Pending Approvals Queue</span>
+                </Link>
+                <Link
+                  href="/audit"
+                  onClick={() => setIsUserMenuOpen(false)}
+                  className="flex items-center space-x-2 px-3 py-2 rounded-lg text-slate-700 hover:bg-slate-50 transition"
+                >
+                  <FileText className="w-4 h-4 text-slate-500" />
+                  <span>Security & Audit Trail</span>
+                </Link>
+                <Link
+                  href="/settings"
+                  onClick={() => setIsUserMenuOpen(false)}
+                  className="flex items-center space-x-2 px-3 py-2 rounded-lg text-slate-700 hover:bg-slate-50 transition"
+                >
+                  <Settings className="w-4 h-4 text-slate-500" />
+                  <span>Platform Settings</span>
+                </Link>
+              </div>
+
+              {/* Quick Role Switcher */}
+              <div className="mt-2 pt-2 border-t border-slate-100">
+                <div className="px-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                  Switch Active Role
+                </div>
+                <div className="grid grid-cols-3 gap-1">
+                  {(["admin", "analyst", "viewer"] as const).map((r) => (
+                    <button
+                      key={r}
+                      type="button"
+                      onClick={() => handleUserRoleSwitch(r)}
+                      className={`px-2 py-1.5 rounded-lg text-[11px] font-semibold capitalize transition ${
+                        currentUser.role === r
+                          ? "bg-indigo-600 text-white"
+                          : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                      }`}
+                    >
+                      {r}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </header>
