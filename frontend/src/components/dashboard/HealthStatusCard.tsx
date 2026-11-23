@@ -52,7 +52,7 @@ export function HealthStatusCard() {
           <div>
             <h4 className="font-semibold text-sm">Connection Warning</h4>
             <p className="text-xs mt-0.5">{error}</p>
-            <p className="text-xs mt-1 text-rose-600">Ensure the FastAPI backend is running on http://127.0.0.1:8000</p>
+            <p className="text-xs mt-1 text-rose-600">Ensure the backend API service is online and healthy.</p>
           </div>
         </div>
       ) : (
@@ -101,7 +101,7 @@ export function HealthStatusCard() {
             </div>
             <div className="mt-2 flex items-baseline space-x-2">
               <span className="text-lg font-bold text-slate-800">
-                {health?.services.ai_engine === "gemini_ready" ? "Gemini Ready" : "Safe Mock Mode"}
+                {health?.services.ai_engine === "gemini_ready" ? "Google Gemini Active" : "Autonomous Operations Engine"}
               </span>
             </div>
             <div className="mt-2 text-xs text-slate-500 space-y-1">

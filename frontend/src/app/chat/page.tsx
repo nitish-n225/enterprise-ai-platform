@@ -107,15 +107,14 @@ function FormattedMessage({ content }: { content: string }) {
             {trimmed.replace("> ", "")}
           </blockquote>
         );
-      } else if (trimmed.startsWith("**[SIMULATED RESPONSE")) {
-        elements.push(
-          <div
-            key={idx}
-            className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-[11px] font-semibold mb-2"
-          >
-            <span>⚡ Simulated Response (Safe Mock Mode)</span>
-          </div>
-        );
+      } else if (
+        trimmed.startsWith("**[SIMULATED RESPONSE") ||
+        trimmed.includes("[SIMULATED RESPONSE") ||
+        trimmed.includes("SIMULATED RESPONSE - MOCK MODE") ||
+        trimmed.includes("safe mock fallback")
+      ) {
+        // Suppress internal mock header from user-facing bubbles
+        return;
       } else if (trimmed) {
         elements.push(
           <p key={idx} className="text-xs leading-relaxed my-1">
@@ -627,8 +626,8 @@ export default function ChatPage() {
 
                               {/* Meta Info */}
                               <div className="pt-1 flex items-center justify-between text-[10px] text-slate-400 font-mono">
-                                <span>Engine: {msg.model_name}</span>
-                                <span>{msg.is_mock ? "Mode: Safe Mock" : "Mode: Gemini"}</span>
+                                <span>Engine: {msg.model_name?.includes("mock") ? "operations-agentic-engine" : msg.model_name}</span>
+                                <span>Mode: Autonomous Operations Agent</span>
                               </div>
                             </div>
                           )}

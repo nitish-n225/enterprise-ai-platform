@@ -305,7 +305,7 @@ export default function KnowledgeBasePage() {
               <Search className="w-4 h-4 text-indigo-600" />
               <span>Vector Semantic Search Inspector</span>
             </h2>
-            <span className="text-xs text-slate-400">RAG Simulator</span>
+            <span className="text-xs text-slate-400">RAG Semantic Engine</span>
           </div>
           <p className="text-xs text-slate-500 mt-1">
             Test natural language queries against your vector embeddings to inspect chunk similarity scores and retrieved citations.

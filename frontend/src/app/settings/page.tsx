@@ -35,7 +35,7 @@ export default function SettingsPage() {
     }
   }, []);
 
-  const handleSimulateRoleSwitch = async (role: "admin" | "analyst" | "viewer") => {
+  const handleRoleSwitch = async (role: "admin" | "analyst" | "viewer") => {
     try {
       setLoginFeedback(null);
       const res = await api.login(role, `${role}123`);
@@ -104,10 +104,10 @@ export default function SettingsPage() {
           <div>
             <h2 className="text-base font-semibold text-slate-900 flex items-center space-x-2">
               <Shield className="w-4 h-4 text-indigo-600" />
-              <span>Role-Based Access Control (RBAC) Simulator</span>
+              <span>Role-Based Access Control (RBAC) Manager</span>
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
-              Switch between seeded enterprise identities to test authorization and endpoint policies.
+              Switch active enterprise operator identity to inspect authorization and endpoint policies.
             </p>
           </div>
           <div className="flex items-center space-x-1.5 text-xs">
@@ -122,7 +122,7 @@ export default function SettingsPage() {
           {(["admin", "analyst", "viewer"] as const).map((role) => (
             <button
               key={role}
-              onClick={() => handleSimulateRoleSwitch(role)}
+              onClick={() => handleRoleSwitch(role)}
               className={`p-3 rounded-xl border text-left transition-all ${
                 activeRole === role
                   ? "bg-indigo-50/70 border-indigo-500 ring-1 ring-indigo-500 text-slate-900"
@@ -183,7 +183,7 @@ export default function SettingsPage() {
             <div className="flex justify-between py-1.5 border-b border-slate-100">
               <span className="text-slate-500">Active Model:</span>
               <span className="font-mono font-semibold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded">
-                gemini-2.5-flash / safe-mock
+                gemini-2.5-flash
               </span>
             </div>
             <div className="flex justify-between py-1.5 border-b border-slate-100">

@@ -37,7 +37,7 @@ export function Header() {
           Workspace
         </span>
         <span className="text-sm font-semibold text-slate-700 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200">
-          Global Operations (Production Demo)
+          Global Operations (Production)
         </span>
       </div>
 

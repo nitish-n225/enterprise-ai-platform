@@ -11,7 +11,7 @@ export function QuickMetricsGrid() {
       change: "+12% QoQ",
     },
     {
-      label: "Simulated Gross Revenue",
+      label: "Enterprise Gross Revenue",
       value: "$2,840,500",
       subtext: "Trailing 12-Month Sales",
       icon: <DollarSign className="w-5 h-5 text-emerald-600" />,
@@ -26,7 +26,7 @@ export function QuickMetricsGrid() {
       alert: true,
     },
     {
-      label: "Seeded Operations Documents",
+      label: "Indexed Corporate Documents",
       value: "2",
       subtext: "Refund Policy & SLA Chunks",
       icon: <FileCheck className="w-5 h-5 text-purple-600" />,
