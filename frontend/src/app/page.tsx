@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { HealthStatusCard } from "@/components/dashboard/HealthStatusCard";
 import { QuickMetricsGrid } from "@/components/dashboard/QuickMetricsGrid";
+import { DEFAULT_WORKSPACES, WorkspaceOption } from "@/components/layout/Header";
 import {
   Bot,
   BarChart3,
@@ -17,13 +18,30 @@ import {
   Send,
   Terminal,
   FileSearch,
-  Sliders,
+  Globe,
   CheckCircle2
 } from "lucide-react";
 
 export default function HomePage() {
   const router = useRouter();
   const [quickQuery, setQuickQuery] = useState("");
+  const [activeWs, setActiveWs] = useState<WorkspaceOption>(DEFAULT_WORKSPACES[0]);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("enterprise_workspace");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed?.name) setActiveWs(parsed);
+      }
+    } catch (e) {}
+
+    const handleWsChange = (e: any) => {
+      if (e.detail?.name) setActiveWs(e.detail);
+    };
+    window.addEventListener("workspaceChanged", handleWsChange);
+    return () => window.removeEventListener("workspaceChanged", handleWsChange);
+  }, []);
 
   const handleDispatchAgent = (e: React.FormEvent) => {
     e.preventDefault();
@@ -120,7 +138,27 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* KPI Cards */}
+      {/* Active Workspace Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-white px-4 py-2.5 rounded-xl border border-slate-200 text-xs gap-2">
+        <div className="flex items-center space-x-2">
+          <Globe className="w-4 h-4 text-indigo-600" />
+          <span className="text-slate-500 font-medium">Operational Workspace:</span>
+          <span className="font-bold text-slate-800">{activeWs.name}</span>
+          <span className="px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 font-mono text-[10px] font-semibold border border-indigo-200">
+            {activeWs.region}
+          </span>
+        </div>
+        <div className="flex items-center space-x-3 text-[11px]">
+          <span className="text-emerald-600 font-medium flex items-center space-x-1.5">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span>{activeWs.activeAgents} Autonomous Agents Active</span>
+          </span>
+          <span className="text-slate-300">|</span>
+          <span className="text-slate-500 font-mono">{activeWs.environment} Tier</span>
+        </div>
+      </div>
+
+      {/* KPI Cards (Dynamic to Selected Workspace) */}
       <QuickMetricsGrid />
 
       {/* Autonomous Agents Operations Hub & Quick Dispatcher */}
@@ -192,7 +230,7 @@ export default function HomePage() {
                 <button
                   type="button"
                   onClick={() => handleChipClick(agent.examplePrompt)}
-                  className="w-full text-left text-[11px] text-indigo-700 hover:text-indigo-900 font-medium bg-white/80 hover:bg-white p-1.5 rounded-lg border border-slate-200/80 truncate flex items-center justify-between transition group"
+                  className="w-full text-left text-[11px] text-indigo-700 hover:text-indigo-900 font-medium bg-white/80 hover:bg-white p-1.5 rounded-lg border border-slate-200/80 truncate flex items-center justify-between transition group cursor-pointer"
                 >
                   <span className="truncate pr-1">Run: &ldquo;{agent.examplePrompt}&rdquo;</span>
                   <ArrowRight className="w-3 h-3 text-indigo-500 group-hover:translate-x-0.5 transition-transform shrink-0" />

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { HealthStatus } from "@/types";
 import {
@@ -10,8 +10,6 @@ import {
   ChevronDown,
   Globe,
   Building2,
-  Server,
-  Sparkles,
   Check,
   Plus,
   CheckCircle2,
@@ -27,7 +25,7 @@ export interface WorkspaceOption {
   badge: string;
 }
 
-const DEFAULT_WORKSPACES: WorkspaceOption[] = [
+export const DEFAULT_WORKSPACES: WorkspaceOption[] = [
   {
     id: "global-ops",
     name: "Global Operations (Production)",
@@ -82,7 +80,6 @@ export function Header() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isCreatingWorkspace, setIsCreatingWorkspace] = useState(false);
   const [newWorkspaceName, setNewWorkspaceName] = useState("");
-  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const fetchHealth = async () => {
     try {
@@ -111,21 +108,19 @@ export function Header() {
           setActiveWorkspace(parsed);
         }
       }
-    } catch (e) {
-      // ignore
-    }
+    } catch (e) {}
 
-    // Close on outside click
-    const handleClickOutside = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setIsDropdownOpen(false);
+    // Listen for external workspace changes
+    const handleExternalChange = (e: any) => {
+      if (e.detail && e.detail.name) {
+        setActiveWorkspace(e.detail);
       }
     };
-    document.addEventListener("mousedown", handleClickOutside);
+    window.addEventListener("workspaceChanged", handleExternalChange);
 
     return () => {
       clearInterval(interval);
-      document.removeEventListener("mousedown", handleClickOutside);
+      window.removeEventListener("workspaceChanged", handleExternalChange);
     };
   }, []);
 
@@ -135,11 +130,9 @@ export function Header() {
     try {
       localStorage.setItem("enterprise_workspace", JSON.stringify(ws));
       window.dispatchEvent(new CustomEvent("workspaceChanged", { detail: ws }));
-    } catch (e) {
-      // ignore
-    }
+    } catch (e) {}
 
-    setToastMessage(`Active workspace switched to "${ws.name}"`);
+    setToastMessage(`Switched operational workspace to "${ws.name}"`);
     setTimeout(() => setToastMessage(null), 3500);
   };
 
@@ -175,17 +168,18 @@ export function Header() {
   return (
     <header className="h-16 bg-white border-b border-slate-200 px-6 flex items-center justify-between sticky top-0 z-30">
       {/* Interactive Workspace Dropdown */}
-      <div className="relative flex items-center space-x-3" ref={dropdownRef}>
+      <div className="relative flex items-center space-x-3">
         <span className="text-[11px] uppercase tracking-wider font-bold text-slate-400">
           Workspace
         </span>
 
         <button
+          type="button"
           onClick={() => setIsDropdownOpen((prev) => !prev)}
-          className="flex items-center space-x-2 text-sm font-semibold text-slate-800 bg-slate-50 hover:bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 transition shadow-sm group"
+          className="flex items-center space-x-2 text-sm font-semibold text-slate-800 bg-slate-50 hover:bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 transition shadow-sm cursor-pointer select-none"
           title="Click to switch or manage operational workspaces"
         >
-          <Globe className="w-4 h-4 text-indigo-600 group-hover:scale-105 transition-transform" />
+          <Globe className="w-4 h-4 text-indigo-600" />
           <span className="max-w-[200px] sm:max-w-xs truncate">{activeWorkspace.name}</span>
           <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700 font-bold">
             {activeWorkspace.badge}
@@ -197,9 +191,17 @@ export function Header() {
           />
         </button>
 
+        {/* Click-outside backdrop */}
+        {isDropdownOpen && (
+          <div
+            className="fixed inset-0 z-40 bg-transparent cursor-default"
+            onClick={() => setIsDropdownOpen(false)}
+          />
+        )}
+
         {/* Dropdown Menu */}
         {isDropdownOpen && (
-          <div className="absolute left-16 top-11 w-80 sm:w-96 bg-white rounded-xl shadow-xl border border-slate-200 p-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+          <div className="absolute left-0 sm:left-12 top-full mt-2 w-80 sm:w-96 bg-white rounded-xl shadow-2xl border border-slate-200 p-2 z-50">
             <div className="px-3 py-2 border-b border-slate-100 flex items-center justify-between">
               <div>
                 <p className="text-xs font-bold text-slate-900">Switch Operational Workspace</p>
@@ -212,15 +214,16 @@ export function Header() {
               </span>
             </div>
 
-            {/* List */}
+            {/* Workspaces List */}
             <div className="max-h-64 overflow-y-auto py-1 space-y-1">
               {workspaces.map((ws) => {
                 const isSelected = ws.id === activeWorkspace.id;
                 return (
                   <button
                     key={ws.id}
+                    type="button"
                     onClick={() => handleSelectWorkspace(ws)}
-                    className={`w-full text-left p-2.5 rounded-lg text-xs transition flex items-center justify-between ${
+                    className={`w-full text-left p-2.5 rounded-lg text-xs transition flex items-center justify-between cursor-pointer ${
                       isSelected
                         ? "bg-indigo-50 border border-indigo-200 text-slate-900"
                         : "hover:bg-slate-50 text-slate-700"
@@ -314,7 +317,7 @@ export function Header() {
 
         {/* Temporary Switch Toast */}
         {toastMessage && (
-          <div className="absolute left-0 -bottom-9 bg-slate-900 text-white text-xs px-3 py-1 rounded-md shadow-md flex items-center space-x-1.5 animate-in fade-in duration-200 z-40 whitespace-nowrap">
+          <div className="absolute left-0 -bottom-9 bg-slate-900 text-white text-xs px-3 py-1 rounded-md shadow-md flex items-center space-x-1.5 z-40 whitespace-nowrap">
             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
             <span>{toastMessage}</span>
           </div>

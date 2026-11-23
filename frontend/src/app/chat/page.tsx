@@ -1,16 +1,15 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import Link from "next/link";
 import { api } from "@/lib/api";
 import { ChatMessageItem, ChatSessionSummary, ToolActivity } from "@/types";
+import { DEFAULT_WORKSPACES, WorkspaceOption } from "@/components/layout/Header";
 import {
-  Bot,
-  User as UserIcon,
   Send,
   Plus,
   Trash2,
-  Clock,
+  Bot,
+  User as UserIcon,
   Sparkles,
   ChevronDown,
   ChevronRight,
@@ -18,7 +17,6 @@ import {
   BarChart3,
   TrendingUp,
   TrendingDown,
-  ShieldCheck,
   CheckCircle2,
   Cpu,
   Layers,
@@ -26,6 +24,7 @@ import {
   Code2,
   ShieldAlert,
   ExternalLink,
+  Globe
 } from "lucide-react";
 
 // Markdown and Table Parser Component
@@ -51,12 +50,12 @@ function FormattedMessage({ content }: { content: string }) {
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 bg-white text-slate-700">
+            <tbody className="divide-y divide-slate-100 bg-white">
               {dataRows.map((row, rIdx) => (
-                <tr key={rIdx} className={rIdx % 2 === 0 ? "bg-white" : "bg-slate-50/50"}>
+                <tr key={rIdx} className="hover:bg-slate-50/50">
                   {row.map((cell, cIdx) => (
-                    <td key={cIdx} className="px-3 py-2 whitespace-nowrap">
-                      {cell.replace(/\*\*/g, "").replace(/`/g, "").trim()}
+                    <td key={cIdx} className="px-3 py-2 whitespace-nowrap text-slate-600 font-mono">
+                      {cell.replace(/`/g, "").trim()}
                     </td>
                   ))}
                 </tr>
@@ -66,37 +65,42 @@ function FormattedMessage({ content }: { content: string }) {
         </div>
       );
       tableRows = [];
-      inTable = false;
     }
   };
 
   lines.forEach((line, idx) => {
     const trimmed = line.trim();
+
     if (trimmed.startsWith("|") && trimmed.endsWith("|")) {
       inTable = true;
       const cells = trimmed
-        .slice(1, -1)
         .split("|")
+        .slice(1, -1)
         .map((c) => c.trim());
       tableRows.push(cells);
     } else {
       if (inTable) {
         flushTable(idx);
+        inTable = false;
       }
 
       if (trimmed.startsWith("### ")) {
         elements.push(
-          <h3 key={idx} className="text-sm font-bold text-slate-900 mt-2.5 mb-1.5">
+          <h3 key={idx} className="font-bold text-slate-900 text-sm mt-3 mb-1">
             {trimmed.replace("### ", "")}
           </h3>
         );
-      } else if (trimmed.startsWith("- **")) {
-        const parts = trimmed.replace("- **", "").split("**:");
+      } else if (trimmed.startsWith("## ")) {
         elements.push(
-          <div key={idx} className="text-xs text-slate-700 my-1 flex items-start space-x-1">
-            <span className="font-semibold text-slate-900">{parts[0]}:</span>
-            <span>{parts.slice(1).join("**:").trim()}</span>
-          </div>
+          <h2 key={idx} className="font-bold text-slate-900 text-base mt-4 mb-2">
+            {trimmed.replace("## ", "")}
+          </h2>
+        );
+      } else if (trimmed.startsWith("- ")) {
+        elements.push(
+          <li key={idx} className="text-xs text-slate-700 ml-4 list-disc my-0.5">
+            {trimmed.replace("- ", "")}
+          </li>
         );
       } else if (trimmed.startsWith("> ")) {
         elements.push(
@@ -113,7 +117,7 @@ function FormattedMessage({ content }: { content: string }) {
         trimmed.includes("SIMULATED RESPONSE - MOCK MODE") ||
         trimmed.includes("safe mock fallback")
       ) {
-        // Suppress internal mock header from user-facing bubbles
+        // Suppress internal mock headers from user-facing bubbles
         return;
       } else if (trimmed) {
         elements.push(
@@ -133,40 +137,8 @@ function FormattedMessage({ content }: { content: string }) {
 }
 
 // Visual Analytics Card for BI Tools & Approvals
-function VisualAnalyticsCard({ tools }: { tools: ToolActivity[] }) {
-  // Check for HITL Approval action
-  const hitlTool = tools.find((t) => t.tool === "hitl_approval");
-  if (hitlTool && hitlTool.data) {
-    const approval = hitlTool.data;
-    return (
-      <div className="bg-amber-50/70 border border-amber-300 rounded-xl p-3 text-xs space-y-2 mt-2">
-        <div className="flex items-center justify-between font-semibold text-amber-900">
-          <div className="flex items-center space-x-1.5">
-            <ShieldAlert className="w-4 h-4 text-amber-600" />
-            <span>Human-in-the-Loop Action Staged</span>
-          </div>
-          <span className="text-[10px] bg-amber-100 text-amber-800 border border-amber-300 px-2 py-0.5 rounded-full font-mono font-bold">
-            #{approval.approval_id} PENDING
-          </span>
-        </div>
-        <p className="text-[11px] text-amber-800">
-          {approval.title || "This high-impact action has been staged for operator review."}
-        </p>
-        <div className="pt-1 flex items-center justify-between border-t border-amber-200/60">
-          <span className="text-[10px] text-amber-700 font-mono">
-            Action: {approval.action_type}
-          </span>
-          <Link
-            href="/approvals"
-            className="inline-flex items-center space-x-1 text-[11px] font-semibold text-indigo-700 hover:text-indigo-900"
-          >
-            <span>Review in Approvals Dashboard</span>
-            <ExternalLink className="w-3 h-3" />
-          </Link>
-        </div>
-      </div>
-    );
-  }
+function VisualAnalyticsCard({ tools }: { tools?: ToolActivity[] }) {
+  if (!tools || tools.length === 0) return null;
 
   const pandasTool = tools.find((t) => t.tool === "pandas_analytics");
   if (!pandasTool || !pandasTool.data) return null;
@@ -274,9 +246,13 @@ export default function ChatPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [expandedSteps, setExpandedSteps] = useState<{ [msgId: number]: boolean }>({});
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [activeWorkspace, setActiveWorkspace] = useState<WorkspaceOption>(DEFAULT_WORKSPACES[0]);
 
-  // Suggested prompts for Phase 3
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const isFreshSessionRef = useRef<boolean>(false);
+
+  // Suggested operational prompts
   const suggestions = [
     { label: "Total Revenue", prompt: "What was our total revenue?" },
     { label: "MoM Growth", prompt: "Compare this month's revenue with last month." },
@@ -286,10 +262,41 @@ export default function ChatPage() {
     { label: "Escalate Ticket", prompt: "Please escalate an urgent support ticket for gateway timeout" },
   ];
 
+  // Initialize workspace & sessions
   useEffect(() => {
+    try {
+      const saved = localStorage.getItem("enterprise_workspace");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed?.name) setActiveWorkspace(parsed);
+      }
+    } catch (e) {}
+
+    const handleWsChange = (e: any) => {
+      if (e.detail?.name) {
+        setActiveWorkspace(e.detail);
+        // Append informational notification in active chat
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: Date.now(),
+            session_id: currentSessionId || "system",
+            role: "assistant",
+            content: `📍 **Workspace Updated:** Switched to \`${e.detail.name}\` (${e.detail.region}). Agent operational context aligned.`,
+            steps: [],
+            tool_activity: [],
+            is_mock: false,
+            model_name: "operations-agentic-engine",
+            created_at: new Date().toISOString(),
+          },
+        ]);
+      }
+    };
+    window.addEventListener("workspaceChanged", handleWsChange);
+
     loadSessions();
 
-    // Support query parameter from dashboard or URL
+    // Check for query param from dashboard or external dispatcher
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       const initialQuery = params.get("q") || params.get("prompt");
@@ -297,12 +304,20 @@ export default function ChatPage() {
         window.history.replaceState({}, "", window.location.pathname);
         setTimeout(() => {
           handleSendMessage(initialQuery);
-        }, 350);
+        }, 300);
       }
     }
+
+    return () => window.removeEventListener("workspaceChanged", handleWsChange);
   }, []);
 
+  // Sync conversation history when session changes
   useEffect(() => {
+    if (isFreshSessionRef.current) {
+      isFreshSessionRef.current = false;
+      return;
+    }
+
     if (currentSessionId) {
       loadHistory(currentSessionId);
     } else {
@@ -318,7 +333,7 @@ export default function ChatPage() {
     try {
       const data = await api.getChatSessions();
       setSessions(data);
-      if (data.length > 0 && !currentSessionId) {
+      if (data.length > 0 && !currentSessionId && !isFreshSessionRef.current) {
         setCurrentSessionId(data[0].session_id);
       }
     } catch (err: any) {
@@ -336,9 +351,45 @@ export default function ChatPage() {
     }
   };
 
+  // + New Chat Click Handler: Always creates and highlights a fresh session
   const handleStartNewSession = () => {
-    setCurrentSessionId(null);
-    setMessages([]);
+    const newSessionId = `sess_${Date.now().toString(36)}`;
+    const newSessionItem: ChatSessionSummary = {
+      session_id: newSessionId,
+      title: "New Operations Conversation",
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      message_count: 1,
+    };
+
+    // Mark as fresh to prevent loadHistory from wiping local welcome message
+    isFreshSessionRef.current = true;
+
+    // Immediately display new conversation in the sidebar
+    setSessions((prev) => [newSessionItem, ...prev.filter((s) => s.session_id !== newSessionId)]);
+    setCurrentSessionId(newSessionId);
+
+    // Initial agent welcome message
+    const welcomeMsg: ChatMessageItem = {
+      id: Date.now(),
+      session_id: newSessionId,
+      role: "assistant",
+      content: `### Autonomous Operations Session Initialized\n\n**Operational Workspace:** \`${activeWorkspace.name}\` (${activeWorkspace.region})\n\nHow can I assist your enterprise operations today?\n\n- **Relational SQL Queries:** *E.g., "What was our total revenue?"*\n- **Financial Intelligence:** *E.g., "Compare this month's revenue with last month."*\n- **Document RAG:** *E.g., "Search company documents for our refund policy."*\n- **Governance Staging:** *E.g., "Please escalate an urgent support ticket."*`,
+      steps: [],
+      tool_activity: [],
+      is_mock: false,
+      model_name: "operations-agentic-engine",
+      created_at: new Date().toISOString(),
+    };
+
+    setMessages([welcomeMsg]);
+    setError(null);
+    setInputMessage("");
+
+    // Auto-focus input box
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 100);
   };
 
   const handleDeleteSession = async (sessId: string, e: React.MouseEvent) => {
@@ -348,7 +399,11 @@ export default function ChatPage() {
       const remaining = sessions.filter((s) => s.session_id !== sessId);
       setSessions(remaining);
       if (currentSessionId === sessId) {
-        setCurrentSessionId(remaining.length > 0 ? remaining[0].session_id : null);
+        if (remaining.length > 0) {
+          setCurrentSessionId(remaining[0].session_id);
+        } else {
+          handleStartNewSession();
+        }
       }
     } catch (err: any) {
       setError(err.message || "Failed to delete session");
@@ -362,9 +417,11 @@ export default function ChatPage() {
     setError(null);
     setInputMessage("");
 
+    const targetSessionId = currentSessionId || `sess_${Date.now().toString(36)}`;
+
     const tempUserMsg: ChatMessageItem = {
       id: Date.now(),
-      session_id: currentSessionId || "temp",
+      session_id: targetSessionId,
       role: "user",
       content: text,
       steps: [],
@@ -373,11 +430,12 @@ export default function ChatPage() {
       model_name: "user",
       created_at: new Date().toISOString(),
     };
+
     setMessages((prev) => [...prev, tempUserMsg]);
     setLoading(true);
 
     try {
-      const response = await api.sendChatMessage(text, currentSessionId || undefined);
+      const response = await api.sendChatMessage(text, targetSessionId);
 
       if (!currentSessionId) {
         setCurrentSessionId(response.session_id);
@@ -401,11 +459,13 @@ export default function ChatPage() {
         return [...filtered, tempUserMsg, assistantMsg];
       });
 
-      loadSessions();
+      // Refresh sessions list quietly
+      api.getChatSessions().then((data) => setSessions(data)).catch(() => {});
     } catch (err: any) {
       setError(err.message || "Error communicating with AI agent");
     } finally {
       setLoading(false);
+      setTimeout(() => inputRef.current?.focus(), 50);
     }
   };
 
@@ -422,8 +482,10 @@ export default function ChatPage() {
             Conversations
           </span>
           <button
+            type="button"
             onClick={handleStartNewSession}
-            className="flex items-center space-x-1 text-xs bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-2.5 py-1.5 rounded-lg shadow-sm transition"
+            className="flex items-center space-x-1.5 text-xs bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-2.5 py-1.5 rounded-lg shadow-sm transition cursor-pointer select-none"
+            title="Start a new operations chat session"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>New Chat</span>
@@ -433,7 +495,14 @@ export default function ChatPage() {
         <div className="flex-1 overflow-y-auto p-2 space-y-1">
           {sessions.length === 0 ? (
             <div className="text-center py-8 text-xs text-slate-400">
-              No previous conversations
+              No previous conversations.
+              <button
+                type="button"
+                onClick={handleStartNewSession}
+                className="block mx-auto mt-2 text-indigo-600 hover:underline font-semibold"
+              >
+                + Start New Session
+              </button>
             </div>
           ) : (
             sessions.map((sess) => {
@@ -455,6 +524,7 @@ export default function ChatPage() {
                     </div>
                   </div>
                   <button
+                    type="button"
                     onClick={(e) => handleDeleteSession(sess.session_id, e)}
                     className="opacity-0 group-hover:opacity-100 p-1 hover:text-rose-600 text-slate-400 transition"
                     title="Delete session"
@@ -470,25 +540,30 @@ export default function ChatPage() {
 
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col min-w-0 bg-slate-50/50">
-        {/* Chat Area Header */}
+        {/* Chat Area Header with Active Workspace */}
         <div className="h-14 px-6 bg-white border-b border-slate-200 flex items-center justify-between shrink-0">
           <div className="flex items-center space-x-3">
             <div className="w-8 h-8 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600">
               <Bot className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-slate-800">
-                AI Business Operations Agent
-              </h3>
+              <div className="flex items-center space-x-2">
+                <h3 className="text-sm font-semibold text-slate-800">
+                  AI Business Operations Agent
+                </h3>
+                <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
+                  {activeWorkspace.name}
+                </span>
+              </div>
               <p className="text-[11px] text-slate-400">
-                Safe SQL AST Engine & Pandas Business Intelligence
+                Scope: {activeWorkspace.region} • {activeWorkspace.activeAgents} Autonomous Agents Ready
               </p>
             </div>
           </div>
 
           <div className="flex items-center space-x-2">
             <span className="text-[11px] font-medium px-2.5 py-1 rounded-full bg-slate-100 border border-slate-200 text-slate-600 flex items-center space-x-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
               <span>AST Guard & BI Active</span>
             </span>
           </div>
@@ -512,8 +587,9 @@ export default function ChatPage() {
                 {suggestions.map((item, idx) => (
                   <button
                     key={idx}
+                    type="button"
                     onClick={() => handleSendMessage(item.prompt)}
-                    className="p-3 bg-white border border-slate-200 hover:border-indigo-400 hover:shadow-sm rounded-xl text-xs text-slate-700 transition flex items-center justify-between group"
+                    className="p-3 bg-white border border-slate-200 hover:border-indigo-400 hover:shadow-sm rounded-xl text-xs text-slate-700 transition flex items-center justify-between group cursor-pointer"
                   >
                     <span className="truncate pr-2">{item.prompt}</span>
                     <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-indigo-600 shrink-0" />
@@ -570,67 +646,66 @@ export default function ChatPage() {
 
                       {/* Assistant Metadata & LangGraph Activity */}
                       {isAssistant && msg.steps && msg.steps.length > 0 && (
-                        <div className="bg-slate-100/80 border border-slate-200 rounded-xl p-3 text-xs text-slate-600 space-y-2">
-                          <div
+                        <div className="bg-slate-100/80 rounded-xl p-3 border border-slate-200/80 text-xs">
+                          <button
+                            type="button"
                             onClick={() => toggleExpand(msg.id)}
-                            className="flex items-center justify-between cursor-pointer font-medium text-slate-700 hover:text-indigo-600 select-none"
+                            className="flex items-center justify-between w-full font-semibold text-slate-700 hover:text-indigo-600 transition"
                           >
-                            <div className="flex items-center space-x-1.5">
-                              <Layers className="w-3.5 h-3.5 text-indigo-600" />
-                              <span>Agent Orchestration Details</span>
-                              {msg.intent && (
-                                <span className="text-[10px] bg-indigo-50 border border-indigo-200 text-indigo-700 px-1.5 py-0.5 rounded uppercase font-mono">
-                                  {msg.intent}
-                                </span>
-                              )}
-                            </div>
-                            <div className="flex items-center space-x-2 text-[11px] text-slate-400">
-                              <span>{msg.steps.length} Steps</span>
-                              {isExpanded ? (
-                                <ChevronDown className="w-3.5 h-3.5" />
-                              ) : (
-                                <ChevronRight className="w-3.5 h-3.5" />
-                              )}
-                            </div>
-                          </div>
+                            <span className="flex items-center space-x-1.5">
+                              <Cpu className="w-3.5 h-3.5 text-indigo-500" />
+                              <span>LangGraph Execution Plan ({msg.steps.length} Steps)</span>
+                            </span>
+                            {isExpanded ? (
+                              <ChevronDown className="w-4 h-4" />
+                            ) : (
+                              <ChevronRight className="w-4 h-4" />
+                            )}
+                          </button>
 
                           {isExpanded && (
-                            <div className="pt-2 border-t border-slate-200 space-y-2">
-                              {/* Step Timeline */}
+                            <div className="mt-2.5 pt-2.5 border-t border-slate-200/60 space-y-2">
                               <div className="space-y-1">
-                                {msg.steps.map((st, i) => (
-                                  <div key={i} className="flex items-center space-x-2 text-[11px] text-slate-600">
-                                    <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />
-                                    <span>{st}</span>
+                                {msg.steps.map((step, sIdx) => (
+                                  <div
+                                    key={sIdx}
+                                    className="flex items-center space-x-2 text-[11px] text-slate-600"
+                                  >
+                                    <span className="w-4 h-4 rounded-full bg-indigo-100 text-indigo-700 font-mono text-[9px] flex items-center justify-center font-bold">
+                                      {sIdx + 1}
+                                    </span>
+                                    <span>{step}</span>
                                   </div>
                                 ))}
                               </div>
 
-                              {/* Tool Results Summary & SQL Details */}
+                              {/* Tool Invocations */}
                               {msg.tool_activity && msg.tool_activity.length > 0 && (
-                                <div className="mt-2 pt-2 border-t border-slate-200">
-                                  <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-1">
-                                    Tool Execution Details
+                                <div className="mt-2 pt-2 border-t border-slate-200/60 space-y-1.5">
+                                  <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center space-x-1">
+                                    <Layers className="w-3 h-3 text-slate-400" />
+                                    <span>Executed Tools</span>
                                   </div>
-                                  {msg.tool_activity.map((tool, idx) => (
+                                  {msg.tool_activity.map((tool, tIdx) => (
                                     <div
-                                      key={idx}
-                                      className="bg-white p-2.5 rounded-lg border border-slate-200 text-[11px] space-y-1.5"
+                                      key={tIdx}
+                                      className="p-2 rounded bg-white border border-slate-200 text-[11px] space-y-1"
                                     >
-                                      <div className="flex items-center justify-between font-mono font-semibold text-slate-700">
-                                        <span>tool: {tool.tool}</span>
-                                        <span className="text-emerald-600 uppercase font-sans text-[10px] font-bold">
-                                          {tool.status || "SUCCESS"}
+                                      <div className="flex items-center justify-between">
+                                        <span className="font-mono font-semibold text-indigo-600">
+                                          {tool.tool}
+                                        </span>
+                                        <span
+                                          className={`text-[9px] px-1.5 py-0.5 rounded ${
+                                            tool.status === "success"
+                                              ? "bg-emerald-50 text-emerald-700 font-bold"
+                                              : "bg-rose-50 text-rose-700 font-bold"
+                                          }`}
+                                        >
+                                          {tool.status}
                                         </span>
                                       </div>
-                                      <p className="text-slate-600 font-sans">{tool.summary}</p>
-                                      {/* Show sanitized SQL query if tool was safe_sql */}
-                                      {tool.tool === "safe_sql" && (tool as any).sanitized_query && (
-                                        <div className="mt-1 p-2 bg-slate-900 text-slate-200 rounded font-mono text-[10px] overflow-x-auto flex items-start space-x-1.5">
-                                          <Code2 className="w-3 h-3 text-indigo-400 shrink-0 mt-0.5" />
-                                          <span>{(tool as any).sanitized_query}</span>
-                                        </div>
-                                      )}
+                                      <p className="text-slate-600 text-[10px]">{tool.summary}</p>
                                     </div>
                                   ))}
                                 </div>
@@ -668,9 +743,18 @@ export default function ChatPage() {
           )}
 
           {error && (
-            <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center space-x-2">
-              <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0"></span>
-              <span>{error}</span>
+            <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0"></span>
+                <span>{error}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleSendMessage()}
+                className="text-[11px] font-semibold text-rose-800 underline hover:no-underline"
+              >
+                Retry
+              </button>
             </div>
           )}
 
@@ -687,17 +771,18 @@ export default function ChatPage() {
             className="flex items-center space-x-2"
           >
             <input
+              ref={inputRef}
               type="text"
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
-              placeholder="Ask a business inquiry (e.g. 'What was our total revenue?')..."
+              placeholder={`Ask ${activeWorkspace.name} operations agent (e.g. 'What was our total revenue?')...`}
               disabled={loading}
               className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
             />
             <button
               type="submit"
               disabled={loading || !inputMessage.trim()}
-              className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white p-2.5 rounded-xl shadow-sm transition shrink-0"
+              className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white p-2.5 rounded-xl shadow-sm transition shrink-0 cursor-pointer"
             >
               <Send className="w-4 h-4" />
             </button>
