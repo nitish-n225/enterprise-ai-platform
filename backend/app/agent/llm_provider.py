@@ -299,22 +299,24 @@ Executed Tool Data:
                 header += "The uploaded company documents and enterprise knowledge base do not contain sufficient information to answer this inquiry.\n\n"
                 header += "*Grounded RAG Guardrail: The Operations Agent strictly bases policy answers on verified internal documents and does not infer or invent missing company facts.*"
             else:
-                top_match = kb_data[0]
-                doc_name = top_match.get("document_filename", "Enterprise_Policy.txt")
-                page_num = top_match.get("page_number", 1)
-                content_excerpt = top_match.get("content", "").strip()
+                header += "### Enterprise Policy & Documentation Findings\n\n"
+                for match in kb_data[:3]:
+                    doc_name = match.get("document_filename", "Enterprise_Policy.txt")
+                    page_num = match.get("page_number", 1)
+                    content_excerpt = match.get("content", "").strip()
 
-                header += f"### Policy & Documentation Findings\n\n"
-                header += f"> \"{content_excerpt}\"\n\n"
-                header += f"**Citation:** [Source: {doc_name}, page {page_num}]\n\n"
+                    header += f"> \"{content_excerpt}\"\n\n"
+                    header += f"**Citation:** [Source: `{doc_name}`, page {page_num}]\n\n"
+
                 header += "**Key Policy Summary:**\n"
-                # Extract bullet points from content
+                top_match = kb_data[0]
+                content_excerpt = top_match.get("content", "").strip()
                 for line in content_excerpt.split("\n"):
                     line = line.strip()
                     if line and (line.startswith("-") or line[0].isdigit()):
                         header += f"{line}\n"
                 if not any(l.strip().startswith("-") or (l.strip() and l.strip()[0].isdigit()) for l in content_excerpt.split("\n")):
-                    header += f"- Verified according to internal policy `{doc_name}` (page {page_num}).\n"
+                    header += f"- Verified according to internal policy `{top_match.get('document_filename')}`.\n"
 
         elif intent == "HITL_ACTION":
             approval_data = next((r.get("data") for r in tool_results if r.get("tool") == "hitl_approval"), None)

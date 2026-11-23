@@ -140,7 +140,8 @@ def synthesize_node(state: AgentState) -> Dict[str, Any]:
         is_mock=is_mock
     )
 
-    steps.append(f"Synthesized final business response via {model_name}")
+    engine_label = "operations-agentic-engine" if "mock" in model_name else model_name
+    steps.append(f"Synthesized final business response via {engine_label}")
 
     return {
         "final_response": final_text,

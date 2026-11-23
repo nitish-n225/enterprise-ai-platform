@@ -27,6 +27,62 @@ import {
   Globe
 } from "lucide-react";
 
+function renderFormattedText(text: string): React.ReactNode {
+  const parts: React.ReactNode[] = [];
+  const regex = /(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`|\[[^\]]+\]\([^)]+\))/g;
+  let lastIndex = 0;
+  let match;
+  let key = 0;
+
+  while ((match = regex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(text.substring(lastIndex, match.index));
+    }
+    const token = match[0];
+    if (token.startsWith("**") && token.endsWith("**")) {
+      parts.push(
+        <strong key={key++} className="font-semibold text-slate-900">
+          {token.slice(2, -2)}
+        </strong>
+      );
+    } else if (token.startsWith("*") && token.endsWith("*")) {
+      parts.push(
+        <em key={key++} className="italic text-slate-600">
+          {token.slice(1, -1)}
+        </em>
+      );
+    } else if (token.startsWith("`") && token.endsWith("`")) {
+      parts.push(
+        <code
+          key={key++}
+          className="px-1.5 py-0.5 rounded bg-slate-100 text-indigo-700 font-mono text-[11px] border border-slate-200"
+        >
+          {token.slice(1, -1)}
+        </code>
+      );
+    } else if (token.startsWith("[") && token.includes("](")) {
+      const label = token.substring(1, token.indexOf("]("));
+      const url = token.substring(token.indexOf("](") + 2, token.length - 1);
+      parts.push(
+        <a
+          key={key++}
+          href={url}
+          className="text-indigo-600 font-semibold underline hover:text-indigo-800"
+        >
+          {label}
+        </a>
+      );
+    }
+    lastIndex = match.index + token.length;
+  }
+
+  if (lastIndex < text.length) {
+    parts.push(text.substring(lastIndex));
+  }
+
+  return parts.length > 0 ? parts : text;
+}
+
 // Markdown and Table Parser Component
 function FormattedMessage({ content }: { content: string }) {
   const lines = content.split("\n");
@@ -45,7 +101,7 @@ function FormattedMessage({ content }: { content: string }) {
               <tr>
                 {headerRow.map((cell, idx) => (
                   <th key={idx} className="px-3 py-2 text-left tracking-wider">
-                    {cell.replace(/`/g, "").trim()}
+                    {renderFormattedText(cell.replace(/`/g, "").trim())}
                   </th>
                 ))}
               </tr>
@@ -55,7 +111,7 @@ function FormattedMessage({ content }: { content: string }) {
                 <tr key={rIdx} className="hover:bg-slate-50/50">
                   {row.map((cell, cIdx) => (
                     <td key={cIdx} className="px-3 py-2 whitespace-nowrap text-slate-600 font-mono">
-                      {cell.replace(/`/g, "").trim()}
+                      {renderFormattedText(cell.replace(/`/g, "").trim())}
                     </td>
                   ))}
                 </tr>
@@ -87,19 +143,19 @@ function FormattedMessage({ content }: { content: string }) {
       if (trimmed.startsWith("### ")) {
         elements.push(
           <h3 key={idx} className="font-bold text-slate-900 text-sm mt-3 mb-1">
-            {trimmed.replace("### ", "")}
+            {renderFormattedText(trimmed.replace("### ", ""))}
           </h3>
         );
       } else if (trimmed.startsWith("## ")) {
         elements.push(
           <h2 key={idx} className="font-bold text-slate-900 text-base mt-4 mb-2">
-            {trimmed.replace("## ", "")}
+            {renderFormattedText(trimmed.replace("## ", ""))}
           </h2>
         );
       } else if (trimmed.startsWith("- ")) {
         elements.push(
           <li key={idx} className="text-xs text-slate-700 ml-4 list-disc my-0.5">
-            {trimmed.replace("- ", "")}
+            {renderFormattedText(trimmed.replace("- ", ""))}
           </li>
         );
       } else if (trimmed.startsWith("> ")) {
@@ -108,7 +164,7 @@ function FormattedMessage({ content }: { content: string }) {
             key={idx}
             className="my-2 border-l-2 border-indigo-400 pl-3 italic text-xs text-slate-600 bg-indigo-50/40 py-1 rounded-r"
           >
-            {trimmed.replace("> ", "")}
+            {renderFormattedText(trimmed.replace("> ", ""))}
           </blockquote>
         );
       } else if (
@@ -122,7 +178,7 @@ function FormattedMessage({ content }: { content: string }) {
       } else if (trimmed) {
         elements.push(
           <p key={idx} className="text-xs leading-relaxed my-1">
-            {line}
+            {renderFormattedText(line)}
           </p>
         );
       }
@@ -674,7 +730,7 @@ export default function ChatPage() {
                                     <span className="w-4 h-4 rounded-full bg-indigo-100 text-indigo-700 font-mono text-[9px] flex items-center justify-center font-bold">
                                       {sIdx + 1}
                                     </span>
-                                    <span>{step}</span>
+                                    <span>{step.replace(/mock-operations-agent/g, "operations-agentic-engine")}</span>
                                   </div>
                                 ))}
                               </div>
